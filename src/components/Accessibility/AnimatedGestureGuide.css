@@ -1,0 +1,299 @@
+/* Animated Gesture Guide CSS */
+
+/* SCROLL_DOWN Animation */
+@keyframes scroll-down {
+  0% {
+    transform: translateY(-40px);
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(40px);
+    opacity: 0.3;
+  }
+}
+
+.scroll-down-anim {
+  animation: scroll-down 1.5s infinite ease-in-out;
+}
+
+/* SCROLL_UP Animation */
+@keyframes scroll-up {
+  0% {
+    transform: translateY(40px);
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-40px);
+    opacity: 1;
+  }
+}
+
+.scroll-up-anim,
+.point-up-anim {
+  animation: scroll-up 1.5s infinite ease-in-out;
+}
+
+/* THUMBS_UP Animation */
+@keyframes thumbs-up {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotate(-5deg) scale(0.95);
+  }
+
+  50% {
+    transform: rotate(5deg) scale(1.05);
+  }
+
+  75% {
+    transform: rotate(-3deg) scale(0.98);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.thumbs-up-anim {
+  animation: thumbs-up 1.2s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* PEACE_SIGN Animation */
+@keyframes peace-sign {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(15deg);
+  }
+
+  50% {
+    transform: rotate(-15deg);
+  }
+
+  75% {
+    transform: rotate(10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.peace-sign-anim {
+  animation: peace-sign 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* STOP_SIGN Animation */
+@keyframes stop-sign {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.stop-sign-anim {
+  animation: stop-sign 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* GO_BACK Animation */
+@keyframes go-back {
+  0% {
+    transform: translateX(0px);
+  }
+
+  25% {
+    transform: translateX(30px);
+  }
+
+  50% {
+    transform: translateX(-30px);
+  }
+
+  75% {
+    transform: translateX(-15px);
+  }
+
+  100% {
+    transform: translateX(0px);
+  }
+}
+
+.go-back-anim {
+  animation: go-back 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* HOUSE Animation */
+@keyframes house {
+  0% {
+    transform: scale(1) rotateZ(0deg);
+  }
+
+  25% {
+    transform: scale(1.1) rotateZ(-2deg);
+  }
+
+  50% {
+    transform: scale(1.15) rotateZ(0deg);
+  }
+
+  75% {
+    transform: scale(1.1) rotateZ(2deg);
+  }
+
+  100% {
+    transform: scale(1) rotateZ(0deg);
+  }
+}
+
+.house-anim {
+  animation: house 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* RAISE_HANDS Animation */
+@keyframes raise-hands {
+  0% {
+    transform: translateY(20px);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateY(-30px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(20px);
+    opacity: 0.8;
+  }
+}
+
+.raise-hands-anim,
+.open-hand-anim {
+  animation: raise-hands 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* THREE_FINGERS Animation */
+@keyframes three-fingers {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+.three-fingers-anim {
+  animation: three-fingers 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* CLOSED_FIST Animation */
+@keyframes closed-fist {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+
+  50% {
+    transform: scale(0.9);
+    filter: saturate(1.5);
+  }
+}
+
+.closed-fist-anim {
+  animation: closed-fist 1s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* ROCK_ON Animation */
+@keyframes rock-on {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-5px) rotate(-5deg);
+  }
+
+  75% {
+    transform: translateY(-5px) rotate(5deg);
+  }
+}
+
+.rock-on-anim {
+  animation: rock-on 1.2s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* OK_SIGN Animation */
+@keyframes ok-sign {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
+  }
+}
+
+.ok-sign-anim {
+  animation: ok-sign 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+/* Bounce effect for icon */
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
+}
