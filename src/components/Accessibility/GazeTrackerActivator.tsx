@@ -8,14 +8,14 @@ type Status = 'IDLE' | 'LOADING' | 'CALIBRATING' | 'READY' | 'ERROR';
 interface Pos { x: number; y: number; }
 
 // ── Advanced Tuning ───────────────────────────────────────────────────────────
-const SENSITIVITY   = 3.5;    // Higher = less head movement needed to cross screen
-const SCROLL_ZONE   = 0.15;   // Top/bottom 15% of screen triggers scroll
-const SCROLL_AMT    = 90;
-const SCROLL_DELAY  = 280;
+const SENSITIVITY = 3.5;    // Higher = less head movement needed to cross screen
+const SCROLL_ZONE = 0.15;   // Top/bottom 15% of screen triggers scroll
+const SCROLL_AMT = 90;
+const SCROLL_DELAY = 280;
 
 // Dwell-to-click tuning
 const DWELL_TIME_MS = 5000;   // 5 seconds to click
-const DWELL_RADIUS  = 90;     // Wide forgiveness radius so you can relax your neck
+const DWELL_RADIUS = 90;     // Wide forgiveness radius so you can relax your neck
 
 const CALIBRATION_POINTS = [
   { id: 1, x: '50%', y: '50%', label: 'Center' },
@@ -25,9 +25,9 @@ const CALIBRATION_POINTS = [
   { id: 5, x: '85%', y: '85%', label: 'Bottom Right' },
 ];
 
-const MP_FACE_MESH_URL  = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js';
-const MP_CAMERA_URL     = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js';
-const MP_DRAWING_URL    = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js';
+const MP_FACE_MESH_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js';
+const MP_CAMERA_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js';
+const MP_DRAWING_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js';
 
 const NOSE_TIP_IDX = 1;
 
@@ -37,7 +37,7 @@ function loadScript(src: string, timeout = 15000): Promise<void> {
     const s = document.createElement('script');
     s.src = src; s.async = true; s.crossOrigin = 'anonymous';
     const t = setTimeout(() => reject(new Error(`Timeout: ${src}`)), timeout);
-    s.onload  = () => { clearTimeout(t); resolve(); };
+    s.onload = () => { clearTimeout(t); resolve(); };
     s.onerror = () => { clearTimeout(t); reject(new Error(`Failed to load: ${src}`)); };
     document.head.appendChild(s);
   });
@@ -46,37 +46,37 @@ function loadScript(src: string, timeout = 15000): Promise<void> {
 const GazeTrackerActivator: React.FC = () => {
   const { isGazeScrollActive } = useUserPreferences();
 
-  const [status,           setStatus]          = useState<Status>('IDLE');
-  const [statusMsg,        setStatusMsg]        = useState('');
-  const [errorMsg,         setErrorMsg]         = useState<string | null>(null);
-  const [cursorPos,        setCursorPos]        = useState<Pos | null>(null);
-  const [scrollZone,       setScrollZone]       = useState<'top' | 'bottom' | null>(null);
-  const [calibStep,        setCalibStep]        = useState(0);
-  const [calibDone,        setCalibDone]        = useState(false);
+  const [status, setStatus] = useState<Status>('IDLE');
+  const [statusMsg, setStatusMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [cursorPos, setCursorPos] = useState<Pos | null>(null);
+  const [scrollZone, setScrollZone] = useState<'top' | 'bottom' | null>(null);
+  const [calibStep, setCalibStep] = useState(0);
+  const [calibDone, setCalibDone] = useState(false);
 
-  const [dwellProgress,    setDwellProgress]    = useState(0);
-  const [clickRipple,      setClickRipple]      = useState<Pos | null>(null);
+  const [dwellProgress, setDwellProgress] = useState(0);
+  const [clickRipple, setClickRipple] = useState<Pos | null>(null);
 
-  const videoRef        = useRef<HTMLVideoElement | null>(null);
-  const streamRef       = useRef<MediaStream | null>(null);
-  const faceMeshRef     = useRef<any>(null);
-  const cameraRef       = useRef<any>(null);
-  const animFrameRef    = useRef<number>(0);
-  const activeRef       = useRef(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const faceMeshRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+  const animFrameRef = useRef<number>(0);
+  const activeRef = useRef(false);
 
   // Tracking Refs
-  const smoothRef       = useRef<Pos>({ x: 0.5, y: 0.5 });
-  const cooldownRef     = useRef(false);
-  const vhRef           = useRef(typeof window !== 'undefined' ? window.innerHeight : 800);
-  const vwRef           = useRef(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const smoothRef = useRef<Pos>({ x: 0.5, y: 0.5 });
+  const cooldownRef = useRef(false);
+  const vhRef = useRef(typeof window !== 'undefined' ? window.innerHeight : 800);
+  const vwRef = useRef(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-  const dwellStartRef   = useRef<number>(0);
-  const dwellAnchorRef  = useRef<Pos | null>(null);
-  const hasClickedRef   = useRef<boolean>(false);
+  const dwellStartRef = useRef<number>(0);
+  const dwellAnchorRef = useRef<Pos | null>(null);
+  const hasClickedRef = useRef<boolean>(false);
 
   const calibSamplesRef = useRef<Pos[][]>(CALIBRATION_POINTS.map(() => []));
-  const mappingRef      = useRef<{ offsetX: number; offsetY: number } | null>(null);
-  const rawNoseRef      = useRef<Pos>({ x: 0.5, y: 0.5 });
+  const mappingRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
+  const rawNoseRef = useRef<Pos>({ x: 0.5, y: 0.5 });
 
   // ── Smart Sniper Smoothing ──────────────────────────────────────────────────
   const smooth = useCallback((nx: number, ny: number): Pos => {
@@ -113,7 +113,7 @@ const GazeTrackerActivator: React.FC = () => {
         el = el.parentElement;
       }
       window.scrollBy({ top: delta, behavior: 'smooth' });
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   const triggerClick = useCallback((x: number, y: number) => {
@@ -305,7 +305,19 @@ const GazeTrackerActivator: React.FC = () => {
         video.srcObject = stream;
         video.playsInline = true;
         video.muted = true;
-        video.style.cssText = 'position:fixed;bottom:16px;left:16px;width:160px;height:120px;border-radius:12px;border:3px solid #3b82f6;z-index:9990;transform:scaleX(-1);object-fit:cover;';
+        // Make video preview responsive for mobile devices
+        const updateVideoStyle = () => {
+          if (!video) return;
+          const isMobile = window.innerWidth <= 768;
+          const width = isMobile ? '100px' : '160px';
+          const height = isMobile ? '75px' : '120px';
+          const top = isMobile ? '80px' : '16px'; // Leave room for standard mobile nav bars
+          video.style.cssText = `position:fixed;top:${top};left:16px;width:${width};height:${height};border-radius:12px;border:3px solid #3b82f6;z-index:9990;transform:scaleX(-1);object-fit:cover;`;
+        };
+        updateVideoStyle();
+
+        // Also listen for resize to update video size dynamically
+        window.addEventListener('resize', updateVideoStyle);
         document.body.appendChild(video);
         videoRef.current = video;
         await video.play();
@@ -320,7 +332,7 @@ const GazeTrackerActivator: React.FC = () => {
         if (cleanedUp) return;
 
         const FaceMesh = (window as any).FaceMesh;
-        const Camera   = (window as any).Camera;
+        const Camera = (window as any).Camera;
 
         if (!FaceMesh) throw new Error('MediaPipe FaceMesh failed to load. Check your internet connection.');
 
@@ -333,7 +345,7 @@ const GazeTrackerActivator: React.FC = () => {
           maxNumFaces: 1,
           refineLandmarks: false,
           minDetectionConfidence: 0.7, // Increased confidence for better stability
-          minTrackingConfidence:  0.7,
+          minTrackingConfidence: 0.7,
         });
 
         faceMesh.onResults((results: any) => onResultsRef.current(results));
@@ -382,14 +394,14 @@ const GazeTrackerActivator: React.FC = () => {
       window.removeEventListener('resize', onResize);
       killAll();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGazeScrollActive]);
 
   function killAll() {
     activeRef.current = false;
     cancelAnimationFrame(animFrameRef.current);
-    try { cameraRef.current?.stop(); }   catch (_) {}
-    try { faceMeshRef.current?.close(); } catch (_) {}
+    try { cameraRef.current?.stop(); } catch (_) { }
+    try { faceMeshRef.current?.close(); } catch (_) { }
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
     videoRef.current?.remove();
@@ -409,7 +421,7 @@ const GazeTrackerActivator: React.FC = () => {
   if (!isGazeScrollActive) return null;
 
   const calibProgress = (calibStep / CALIBRATION_POINTS.length) * 100;
-  const currentPoint  = CALIBRATION_POINTS[calibStep];
+  const currentPoint = CALIBRATION_POINTS[calibStep];
 
   const ringRadius = 22;
   const ringCircumference = 2 * Math.PI * ringRadius;

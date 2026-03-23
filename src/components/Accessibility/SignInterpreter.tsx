@@ -361,7 +361,7 @@ const SignInterpreter: React.FC<{ onSignDetected?: (sign: string) => void }> = (
         </span>
       </div>
 
-      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-700">
+      <div className="relative w-full aspect-[4/3] md:aspect-video bg-black rounded-xl overflow-hidden border border-slate-700">
         <video
           ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover transform -scale-x-100"

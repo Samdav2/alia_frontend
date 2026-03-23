@@ -2,8 +2,9 @@ import React from 'react';
 import { Navigation } from '@/components/Homepage/Navigation';
 import { HeroSection } from '@/components/Homepage/HeroSection';
 import { PathCards } from '@/components/Homepage/PathCards';
+import { FeatureShowcase } from '@/components/Homepage/FeatureShowcase';
 import { AgentShowcase } from '@/components/Homepage/AgentShowcase';
-import { PricingSection } from '@/components/Homepage/PricingSection';
+import { ImportanceSection } from '@/components/Homepage/ImportanceSection';
 import { TrustSection } from '@/components/Homepage/TrustSection';
 import { Footer } from '@/components/Homepage/Footer';
 
@@ -13,8 +14,9 @@ export default function HomePage() {
       <Navigation />
       <HeroSection />
       <PathCards />
+      <FeatureShowcase />
       <AgentShowcase />
-      <PricingSection />
+      <ImportanceSection />
       <TrustSection />
       <Footer />
     </main>

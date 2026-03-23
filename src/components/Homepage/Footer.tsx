@@ -54,8 +54,8 @@ export const Footer: React.FC = () => {
                 AE
               </div>
               <div>
-                <p className="text-slate-900 font-black text-lg">Amiola Oluwademilade Emmanuel</p>
-                <p className="text-slate-500 font-bold">Lagos State University | 220194031</p>
+                <p className="text-slate-900 font-black text-lg">Dawodu Samuel Iyanu</p>
+                <p className="text-slate-500 font-bold">Lagos State University | 220194044</p>
               </div>
             </div>
 
