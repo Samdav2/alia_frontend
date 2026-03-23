@@ -309,10 +309,26 @@ const GazeTrackerActivator: React.FC = () => {
         const updateVideoStyle = () => {
           if (!video) return;
           const isMobile = window.innerWidth <= 768;
-          const width = isMobile ? '100px' : '160px';
-          const height = isMobile ? '75px' : '120px';
-          const top = isMobile ? '80px' : '16px'; // Leave room for standard mobile nav bars
-          video.style.cssText = `position:fixed;top:${top};left:16px;width:${width};height:${height};border-radius:12px;border:3px solid #3b82f6;z-index:9990;transform:scaleX(-1);object-fit:cover;`;
+          const width = isMobile ? '80px' : '160px'; // Even smaller on mobile
+          const height = isMobile ? '60px' : '120px';
+          const top = isMobile ? '80px' : '16px';
+          video.style.cssText = `position:fixed;top:${top};left:16px;width:${width};height:${height};border-radius:12px;border:3px solid #3b82f6;z-index:9990;transform:scaleX(-1);object-fit:cover;transition:all 0.3s ease;`;
+
+          // Add a small stop button overlay if it doesn't exist
+          let stopBtn = document.getElementById('gaze-stop-btn');
+          if (!stopBtn) {
+            stopBtn = document.createElement('button');
+            stopBtn.id = 'gaze-stop-btn';
+            stopBtn.innerHTML = '✕';
+            stopBtn.style.cssText = `position:fixed;top:${parseInt(top) - 8}px;left:${parseInt(width) + 8}px;width:24px;height:24px;background:#ef4444;color:white;border-radius:50%;border:2px solid white;z-index:9991;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);`;
+            stopBtn.onclick = () => {
+              killAll();
+            };
+            document.body.appendChild(stopBtn);
+          } else {
+            stopBtn.style.top = `${parseInt(top) - 8}px`;
+            stopBtn.style.left = `${parseInt(width) + 8}px`;
+          }
         };
         updateVideoStyle();
 
@@ -410,6 +426,10 @@ const GazeTrackerActivator: React.FC = () => {
     cameraRef.current = null;
     setCursorPos(null);
     setScrollZone(null);
+    const stopBtn = document.getElementById('gaze-stop-btn');
+    if (stopBtn && document.body.contains(stopBtn)) {
+      document.body.removeChild(stopBtn);
+    }
     setStatus('IDLE');
     setCalibStep(0);
     setCalibDone(false);

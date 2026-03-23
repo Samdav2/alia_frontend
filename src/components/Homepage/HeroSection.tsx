@@ -43,70 +43,76 @@ export const HeroSection: React.FC = () => {
             className="space-y-12 text-center lg:text-left"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-3 px-6 py-3 glass-card rounded-full border-blue-100/50 shadow-xl shadow-blue-500/5"
+              className="inline-flex items-center gap-2.5 px-4 py-2 bg-white/40 backdrop-blur-xl rounded-[14px] border border-white/60 shadow-[0_8px_32px_rgba(59,130,246,0.1)] ring-1 ring-blue-500/10"
             >
-              <div className="relative flex h-3 w-3">
-                <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></div>
-                <div className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></div>
+              <div className="relative flex h-2 w-2">
+                <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-75"></div>
+                <div className="relative rounded-full h-2 w-2 bg-blue-600"></div>
               </div>
-              <span className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent uppercase tracking-wider">
-                ALIA V1: Evolution of Learning
+              <span className="text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent uppercase tracking-[0.2em]">
+                System V1 // Neural Evolution
               </span>
             </motion.div>
 
-            <div className="space-y-8">
-              <h1 className="text-4xl sm:text-7xl xl:text-9xl font-black text-slate-900 leading-[1.1] sm:leading-[1] tracking-[-0.04em] perspective-1000">
+            <div className="space-y-6 sm:space-y-10">
+              <h1 className="text-[42px] sm:text-7xl xl:text-9xl font-black text-slate-900 leading-[1] tracking-[-0.05em] perspective-1000">
                 Learning, <br />
-                <span className="relative inline-block">
+                <span className="relative inline-block overflow-hidden pb-1">
                   <span className="alia-gradient-text">Adapted</span>
-                  <div className="absolute -bottom-2 inset-x-0 h-4 bg-blue-500/10 -z-10 rounded-full" />
+                  <motion.div
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '100%' }}
+                    transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                    className="absolute bottom-0 left-0 w-full h-[6px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent -z-10"
+                  />
                 </span>
                 <br /> to You
               </h1>
-              <p className="text-lg sm:text-2xl text-slate-600 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium">
-                Meet <span className="text-slate-900 font-black border-b-4 border-blue-500/20 px-1">ALIA</span> — your personal adaptive learning agent. We’ve built a platform where accessibility isn’t a feature, it’s the heartbeat.
+              <p className="text-base sm:text-2xl text-slate-500 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
+                Smarter education starts here. <span className="text-slate-900 font-black decoration-blue-500/30 decoration-4 underline underline-offset-4 tracking-tight">ALIA</span> synthesizes personalized paths for every student, making accessibility the standard.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start px-4 sm:px-0">
               <Link
                 href="/dashboard/student"
-                className="group px-8 sm:px-12 py-4 sm:py-6 bg-slate-900 text-white rounded-[16px] sm:rounded-[24px] font-black text-lg sm:text-xl hover-lift shadow-2xl shadow-slate-300 transition-all flex items-center justify-center gap-4"
+                className="group relative px-10 sm:px-14 py-4 sm:py-6 bg-slate-900 text-white rounded-[20px] sm:rounded-[28px] font-black text-lg sm:text-xl overflow-hidden hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-slate-400"
               >
-                Launch Hub
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 flex items-center justify-center gap-3 sm:gap-4">
+                  Launch Hub
+                  <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1.5 transition-transform" />
                 </div>
               </Link>
               <Link
                 href="#importance"
-                className="px-8 sm:px-12 py-4 sm:py-6 glass-card rounded-[16px] sm:rounded-[24px] font-black text-lg sm:text-xl hover-lift text-slate-900 border-white/80 flex items-center justify-center gap-3"
+                className="px-10 sm:px-14 py-4 sm:py-6 glass-card rounded-[20px] sm:rounded-[28px] font-black text-lg sm:text-xl hover:bg-white/90 text-slate-600 border-white shadow-xl shadow-slate-100 flex items-center justify-center gap-3"
               >
-                Why Project Matters
+                Learn More
               </Link>
             </div>
 
-            <div className="flex items-center justify-center lg:justify-start gap-16 pt-8">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-blue-600 border border-slate-100">
-                  <Brain className="w-8 h-8" />
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 sm:gap-12 pt-4 sm:pt-8 opacity-90">
+              <div className="flex items-center gap-3.5 p-3 bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
+                <div className="w-11 h-11 rounded-xl bg-slate-900 flex items-center justify-center text-blue-400 shadow-lg">
+                  <Brain className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-slate-900 tracking-tighter">AI-POWERED</span>
-                  <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-500">Autonomous Core</span>
+                  <span className="block text-xl font-black text-slate-900 tracking-tighter uppercase">AI Core</span>
+                  <span className="text-[9px] uppercase font-bold tracking-[0.1em] text-slate-400">Autonomous</span>
                 </div>
               </div>
-              <div className="w-px h-12 bg-slate-200" />
-              <div className="flex -space-x-4">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <div key={n} className="w-12 h-12 rounded-full border-4 border-white bg-slate-200 overflow-hidden shadow-lg transition-transform hover:scale-110 cursor-pointer">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${n + 20}`} alt="User" />
+
+              <div className="flex -space-x-3.5">
+                {[1, 2, 3, 4].map(n => (
+                  <div key={n} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden shadow-md">
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${n + 50}`} alt="User" />
                   </div>
                 ))}
-                <div className="w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-xs text-white font-black shadow-lg">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-[3px] border-white bg-slate-900 flex items-center justify-center text-[10px] text-white font-black shadow-md">
                   +1.2k
                 </div>
               </div>

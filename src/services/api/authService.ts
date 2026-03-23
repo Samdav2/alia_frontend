@@ -74,20 +74,28 @@ class AuthService {
     }
   }
 
-  // Store tokens in localStorage
+  // Store tokens in localStorage and cookies (for middleware)
   private setTokens(accessToken: string, refreshToken: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
+
+      // Set cookie for middleware access (7 days expiry for simplicity)
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 7);
+      document.cookie = `auth_token=${accessToken}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
     }
   }
 
-  // Clear tokens from localStorage
+  // Clear tokens from localStorage and cookies
   private clearTokens(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
+
+      // Clear cookie
+      document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
   }
 

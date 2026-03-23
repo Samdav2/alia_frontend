@@ -51,13 +51,19 @@ export const VisualNotification: React.FC<VisualNotificationProps> = ({
 
   return (
     <div
-      className={`fixed top-4 right-4 z-[9999] ${colors[type]} text-white px-6 py-4 rounded-lg shadow-2xl border-4 animate-bounce-in max-w-md`}
+      className={`fixed top-4 sm:top-6 left-1/2 sm:left-auto sm:right-6 -translate-x-1/2 sm:translate-x-0 z-[10000] ${colors[type]} text-white px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl sm:rounded-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] border-2 sm:border-4 border-white/20 animate-bounce-in w-[calc(100%-32px)] sm:w-auto max-w-md backdrop-blur-md`}
       role="alert"
       aria-live="assertive"
+      onClick={() => {
+        setIsVisible(false);
+        onClose?.();
+      }}
     >
-      <div className="flex items-center gap-3">
-        <span className="text-3xl font-bold">{icons[type]}</span>
-        <p className="font-bold text-lg">{message}</p>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shrink-0">
+          {icons[type]}
+        </div>
+        <p className="font-black text-base sm:text-lg leading-tight">{message}</p>
       </div>
     </div>
   );

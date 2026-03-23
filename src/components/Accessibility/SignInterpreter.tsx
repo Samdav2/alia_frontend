@@ -352,16 +352,16 @@ const SignInterpreter: React.FC<{ onSignDetected?: (sign: string) => void }> = (
   }
 
   return (
-    <div className="flex flex-col h-full p-4 w-full bg-slate-900">
-      <div className="flex justify-between items-center text-white mb-4">
-        <h2 className="text-lg font-black">👁️ Vision Engine</h2>
-        <span className={`text-xs px-3 py-1 rounded-full font-bold ${status.includes('Active') ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+    <div className="flex flex-col h-full p-3 sm:p-4 w-full bg-slate-900 overflow-y-auto">
+      <div className="flex justify-between items-center text-white mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-black">👁️ Vision Engine</h2>
+        <span className={`text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-full font-bold ${status.includes('Active') ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
           }`}>
           {status}
         </span>
       </div>
 
-      <div className="relative w-full aspect-[4/3] md:aspect-video bg-black rounded-xl overflow-hidden border border-slate-700">
+      <div className="relative w-full aspect-[4/3] sm:aspect-video bg-black rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
         <video
           ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover transform -scale-x-100"
@@ -383,14 +383,27 @@ const SignInterpreter: React.FC<{ onSignDetected?: (sign: string) => void }> = (
         )}
       </div>
 
-      <div className="mt-4 bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
-        <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">Detected Gesture</p>
-        <p className="text-3xl font-black text-white">{currentSign}</p>
-        <div className="w-full bg-slate-900 h-2 mt-3 rounded-full overflow-hidden border border-slate-700">
+      <div className="mt-3 sm:mt-5 bg-slate-800/40 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-white/5 text-center shadow-inner">
+        <p className="text-slate-500 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black mb-1.5 sm:mb-2">Gesture Synthesis</p>
+        <div className="flex items-center justify-center gap-3 mb-2 sm:mb-4">
+          <p className="text-2xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">
+            {currentSign || 'Scanning...'}
+          </p>
+          {confidence > 0.8 && (
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+              <span className="text-[10px] sm:text-xs text-white">✓</span>
+            </div>
+          )}
+        </div>
+        <div className="relative w-full bg-slate-950/80 h-2 sm:h-2.5 rounded-full overflow-hidden border border-white/5 p-[1.5px]">
           <div
-            className="h-full bg-green-500 transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-blue-500 via-emerald-400 to-green-500 transition-all duration-300 ease-out rounded-full shadow-[0_0_15px_rgba(52,211,153,0.4)]"
             style={{ width: `${confidence * 100}%` }}
           />
+        </div>
+        <div className="flex justify-between mt-1 sm:mt-2 px-1">
+          <span className="text-[8px] sm:text-[9px] font-black text-slate-600 uppercase tracking-widest">Confidence</span>
+          <span className="text-[8px] sm:text-[9px] font-black text-blue-400">{(confidence * 100).toFixed(0)}%</span>
         </div>
       </div>
     </div>
