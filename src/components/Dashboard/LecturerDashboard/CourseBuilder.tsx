@@ -23,6 +23,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
   const [showCreateTopicModal, setShowCreateTopicModal] = useState(false);
   const [editorView, setEditorView] = useState<'list' | 'module_form' | 'topic_form'>('list');
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
@@ -44,7 +45,8 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
     title: '',
     description: '',
     order: 1,
-    duration: ''
+    duration: '',
+    available_at: null,
   });
 
   const [topicForm, setTopicForm] = useState<CreateTopicData>({
@@ -54,6 +56,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
     content_type: 'text',
     order: 1,
     duration: '30', // Changed from number to string
+    available_at: null,
     resources: []
   });
 
@@ -122,6 +125,34 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
     }
   };
 
+  const handleEditModule = (module: Module) => {
+    setEditingModule(module);
+    setModuleForm({
+      title: module.title,
+      description: module.description,
+      order: module.order || 1,
+      duration: module.duration || '',
+      available_at: module.available_at || null,
+    });
+    setEditorView('module_form');
+  };
+
+  const handleUpdateModule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingModule || !selectedCourse) return;
+
+    try {
+      await lecturerService.updateModule(editingModule.id, moduleForm);
+      showNotification('Module updated successfully', 'success');
+      setEditingModule(null);
+      setEditorView('list');
+      resetModuleForm();
+      loadCourseModules(selectedCourse.id);
+    } catch (err) {
+      showNotification('Failed to update module', 'error');
+    }
+  };
+
   const handleCreateTopic = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedModule) return;
@@ -141,9 +172,25 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
     try {
       await lecturerService.publishCourse(courseId);
       showNotification('Course published successfully', 'success');
+      if (selectedCourse?.id === courseId) {
+        setSelectedCourse(prev => prev ? { ...prev, is_active: true } : prev);
+      }
       loadMyCourses();
     } catch (err) {
       showNotification('Failed to publish course', 'error');
+    }
+  };
+
+  const handleUnpublishCourse = async (courseId: string) => {
+    try {
+      await lecturerService.unpublishCourse(courseId);
+      showNotification('Course moved to draft successfully', 'success');
+      if (selectedCourse?.id === courseId) {
+        setSelectedCourse(prev => prev ? { ...prev, is_active: false } : prev);
+      }
+      loadMyCourses();
+    } catch (err) {
+      showNotification('Failed to unpublish course', 'error');
     }
   };
 
@@ -157,6 +204,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
       content_type: topic.content_type || 'text',
       order: topic.order || 1,
       duration: topic.duration?.toString() || '30 mins',
+      available_at: topic.available_at || null,
       resources: topic.resources || []
     });
     setEditorView('topic_form');
@@ -213,8 +261,10 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
       title: '',
       description: '',
       order: 1,
-      duration: ''
+      duration: '',
+      available_at: null,
     });
+    setEditingModule(null);
   };
 
   const resetTopicForm = () => {
@@ -225,6 +275,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
       content_type: 'text',
       order: 1,
       duration: '30 mins',
+      available_at: null,
       resources: []
     });
   };
@@ -265,7 +316,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
   return (
   <div className="space-y-6">
     {/* Header */}
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-slate-50 p-6 sm:p-8 rounded-[32px] border border-slate-200 shadow-inner">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-slate-50 p-6 sm:p-8 rounded-4xl border border-slate-200 shadow-inner">
       <div>
         <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Course Architect</h2>
         <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs mt-1">Design and deploy your digital curriculum</p>
@@ -307,18 +358,18 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                     <h4 className="text-lg font-bold text-slate-900 mb-1">{course.title}</h4>
                     <p className="text-sm text-slate-600">{course.code}</p>
                   </div>
-                  {getStatusBadge((course as any).status || 'draft')}
+                  {getStatusBadge(course.is_active ? 'published' : 'draft')}
                 </div>
 
                 <p className="text-sm text-slate-700 mb-4 line-clamp-2">{course.description}</p>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span>📊 {(course as any).enrollments || 0} students</span>
+                    <span>📊 {course.enrollment_count || 0} students</span>
                     <span>⏱️ {course.duration}</span>
                   </div>
 
-                  {(course as any).status === 'draft' && (
+                  {!course.is_active && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -345,9 +396,27 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
           >
             ← Back to Courses
           </button>
-          <div>
+          <div className="flex-1">
             <h3 className="text-xl font-bold text-slate-900">{selectedCourse.title}</h3>
             <p className="text-sm text-slate-600">{selectedCourse.code}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {getStatusBadge(selectedCourse.is_active ? 'published' : 'draft')}
+            {selectedCourse.is_active ? (
+              <button
+                onClick={() => handleUnpublishCourse(selectedCourse.id)}
+                className="px-4 py-2 rounded-lg bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider hover:bg-slate-300 transition-colors"
+              >
+                Move to Draft
+              </button>
+            ) : (
+              <button
+                onClick={() => handlePublishCourse(selectedCourse.id)}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-green-700 transition-colors"
+              >
+                Publish Course
+              </button>
+            )}
           </div>
         </div>
 
@@ -384,7 +453,10 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="text-lg font-bold text-slate-900">Course Modules</h4>
                   <button
-                    onClick={() => setEditorView('module_form')}
+                    onClick={() => {
+                      resetModuleForm();
+                      setEditorView('module_form');
+                    }}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
                   >
                     + Add Module
@@ -428,8 +500,8 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                                   <span className="text-xs font-bold text-slate-400">{index + 1}.{tIndex + 1}</span>
                                   <span className="text-sm font-semibold text-slate-700">{topic.title}</span>
                                 </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover/topic:opacity-100 transition-opacity">
-                                  <button 
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <button
                                     onClick={() => {
                                       setSelectedTopic(topic);
                                       setShowQuizBuilder(true);
@@ -439,7 +511,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                                   >
                                     📝 Quiz
                                   </button>
-                                  <button 
+                                  <button
                                     onClick={() => {
                                       // Show topic file manager
                                       setSelectedModule(module);
@@ -450,14 +522,14 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                                   >
                                     📁
                                   </button>
-                                  <button 
+                                  <button
                                     onClick={() => handleEditTopic(topic, module)}
                                     className="text-blue-600 hover:text-blue-800 text-xs font-bold"
                                     title="Edit topic"
                                   >
                                     Edit
                                   </button>
-                                  <button 
+                                  <button
                                     onClick={() => {
                                       setTopicToDelete({ topicId: topic.id, title: topic.title });
                                       setShowDeleteTopicConfirm(true);
@@ -477,7 +549,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                   <div className="flex gap-4">
                     <span>Topics: {module.topics?.length || 0}</span>
                     <span>Duration: {module.duration}</span>
-                    <FileCounter 
+                    <FileCounter
                       context={{
                         type: 'module',
                         courseId: selectedCourse?.id,
@@ -486,6 +558,12 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                     />
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditModule(module)}
+                      className="text-blue-600 hover:text-blue-700 font-semibold"
+                    >
+                      Edit
+                    </button>
                     <button className="text-slate-400 hover:text-slate-600">Reorder</button>
                     <button className="text-slate-400 hover:text-red-600">Delete</button>
                   </div>
@@ -498,14 +576,22 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
             )}
 
             {editorView === 'module_form' && (
-              <div className="glass-card p-8 rounded-[32px] animate-fade-in border-blue-100 shadow-blue-500/5">
+              <div className="glass-card p-8 rounded-4xl animate-fade-in border-blue-100 shadow-blue-500/5">
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Add Course Module</h3>
-                  <button onClick={() => setEditorView('list')} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                    {editingModule ? 'Edit Course Module' : 'Add Course Module'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setEditorView('list');
+                      resetModuleForm();
+                    }}
+                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                  >
                     ✕ Close
                   </button>
                 </div>
-                <form onSubmit={handleCreateModule} className="space-y-6">
+                <form onSubmit={editingModule ? handleUpdateModule : handleCreateModule} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Module Title</label>
                     <input
@@ -549,16 +635,29 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Available At (Optional)</label>
+                    <input
+                      type="datetime-local"
+                      value={moduleForm.available_at ? moduleForm.available_at.slice(0, 16) : ''}
+                      onChange={(e) => setModuleForm({ ...moduleForm, available_at: e.target.value || null })}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    />
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Leave empty for immediate release.</p>
+                  </div>
                   <div className="flex gap-4 pt-4">
                     <button
                       type="submit"
                       className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-blue-600 transition-all"
                     >
-                      Create Module
+                      {editingModule ? 'Update Module' : 'Create Module'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditorView('list')}
+                      onClick={() => {
+                        setEditorView('list');
+                        resetModuleForm();
+                      }}
                       className="px-8 py-4 text-slate-500 font-black uppercase tracking-widest text-xs hover:bg-slate-50 rounded-2xl transition-all"
                     >
                       Cancel
@@ -569,7 +668,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
             )}
 
             {editorView === 'topic_form' && (
-              <div className="glass-card p-8 rounded-[32px] animate-fade-in border-green-100 shadow-green-500/5">
+              <div className="glass-card p-8 rounded-4xl animate-fade-in border-green-100 shadow-green-500/5">
                 <div className="flex justify-between items-center mb-8">
                   <div>
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">
@@ -577,12 +676,12 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                     </h3>
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">MODULE: {selectedModule?.title}</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       setEditorView('list');
                       setEditingTopic(null);
                       resetTopicForm();
-                    }} 
+                    }}
                     className="text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     ✕ Close
@@ -605,12 +704,11 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Content Type</label>
                       <select
                         value={topicForm.content_type}
-                        onChange={(e) => setTopicForm({ ...topicForm, content_type: e.target.value as any })}
+                        onChange={(e) => setTopicForm({ ...topicForm, content_type: e.target.value as CreateTopicData['content_type'] })}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
                       >
                         <option value="text">Text / Article</option>
                         <option value="video">Video Lecture</option>
-                        <option value="quiz">Interactive Quiz</option>
                         <option value="interactive">Simulation</option>
                       </select>
                     </div>
@@ -624,6 +722,16 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                         placeholder="e.g., 30 mins"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Available At (Optional)</label>
+                    <input
+                      type="datetime-local"
+                      value={topicForm.available_at ? topicForm.available_at.slice(0, 16) : ''}
+                      onChange={(e) => setTopicForm({ ...topicForm, available_at: e.target.value || null })}
+                      className="w-full px-5 py-4 bg-slate-50 border text-slate-900 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    />
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Leave empty for immediate release.</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Description</label>
@@ -717,12 +825,12 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Status:</span>
-                  <span className="ml-2">{getStatusBadge((selectedCourse as any).status || 'draft')}</span>
+                  <span className="ml-2">{getStatusBadge(selectedCourse.is_active ? 'published' : 'draft')}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Files:</span>
                   <span className="ml-2">
-                    <FileCounter 
+                    <FileCounter
                       context={{
                         type: 'course',
                         courseId: selectedCourse.id
@@ -739,7 +847,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
 
     {/* Create Course Modal */}
     {showCreateCourseModal && (
-      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-9999">
         <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20 animate-bounce-in">
           <h3 className="text-2xl font-black text-slate-900 mb-6">Create New Course</h3>
 
@@ -802,7 +910,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                 <label className="block text-sm font-bold text-slate-700 mb-2">Level</label>
                 <select
                   value={courseForm.level}
-                  onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value as any })}
+                  onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value as CreateCourseData['level'] })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="beginner">Beginner</option>
@@ -848,7 +956,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
 
     {/* Quiz Builder Modal */}
     {showQuizBuilder && selectedTopic && (
-      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-9999">
         <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
           <QuizBuilder
             topicId={selectedTopic.id}

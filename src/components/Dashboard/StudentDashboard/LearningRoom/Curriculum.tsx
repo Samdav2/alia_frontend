@@ -23,6 +23,20 @@ export const Curriculum: React.FC<CurriculumProps> = ({
   const [isCourseCompleted, setIsCourseCompleted] = useState(false);
   const { showNotification } = useVisualNotification();
 
+  const isDateLocked = (dateValue?: string | null) => {
+    if (!dateValue) return false;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.getTime() > Date.now();
+  };
+
+  const formatAvailability = (dateValue?: string | null) => {
+    if (!dateValue) return null;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue;
+    return date.toLocaleString();
+  };
+
   useEffect(() => {
     loadCurriculumData();
   }, [courseId]);
@@ -30,7 +44,7 @@ export const Curriculum: React.FC<CurriculumProps> = ({
   const loadCurriculumData = async () => {
     try {
       setLoading(true);
-      
+
       // Load course details from API
       const courseData = await courseService.getCourseDetails(courseId);
       setCourse(courseData);
@@ -48,7 +62,7 @@ export const Curriculum: React.FC<CurriculumProps> = ({
         courseCompleted = progressData.is_completed || false;
       } catch (apiError) {
         console.error('API progress fetch failed, using localStorage fallback:', apiError);
-        
+
         // Fallback to localStorage
         const savedProgress = localStorage.getItem('course-progress');
         if (savedProgress) {
@@ -85,9 +99,9 @@ export const Curriculum: React.FC<CurriculumProps> = ({
 
       // Also reset localStorage progress as fallback
       autonomousAgentService.resetCourseProgress(courseId);
-      
+
       showNotification('Course progress reset! You can now retake from the beginning. 🔄', 'success');
-      
+
       if (autonomousAgentService.getVoiceEnabled()) {
         textToSpeechService.announce('Course progress has been reset. You can now retake the course from the beginning.');
       }
@@ -141,7 +155,7 @@ export const Curriculum: React.FC<CurriculumProps> = ({
               <p className="text-sm text-green-600 font-medium">Congratulations on finishing</p>
             </div>
           </div>
-          
+
           <button
             onClick={handleRetakeCourse}
             className="w-full px-4 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all hover-lift flex items-center justify-center gap-2"
@@ -154,51 +168,88 @@ export const Curriculum: React.FC<CurriculumProps> = ({
 
       <div className="space-y-10">
         {course.modules && course.modules.length > 0 ? (
-          course.modules.map((module) => (
+          course.modules.map((module) => {
+            const moduleLocked = module.is_locked === true || isDateLocked(module.available_at);
+            return (
             <div key={module.id} className="space-y-4">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                 Module {module.order}: {module.title}
               </h3>
+              {moduleLocked && (
+                <p className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  {module.availability_message || `This module unlocks on ${formatAvailability(module.available_at) || 'the scheduled date'}.`}
+                </p>
+              )}
               <div className="space-y-3">
                 {module.topics && module.topics.length > 0 ? (
-                  module.topics.map((topic) => (
-                    <Link
-                      key={topic.id}
-                      href={`/courses/${courseId}/topics/${topic.id}`}
-                      className="group"
-                    >
+                  module.topics.map((topic) => {
+                    const topicLocked = moduleLocked || topic.is_locked === true || isDateLocked(topic.available_at);
+                    const topicDuration = typeof topic.duration === 'number' ? `${Math.max(1, Math.floor(topic.duration / 60))}min` : topic.duration;
+                    const topicCard = (
                       <div
-                        className={`p-5 rounded-2xl cursor-pointer transition-all hover-lift ${currentTopicId === topic.id
+                        className={`p-5 rounded-2xl transition-all ${topicLocked
+                          ? 'bg-slate-100 border border-slate-200 cursor-not-allowed opacity-70'
+                          : currentTopicId === topic.id
                             ? 'bg-slate-900 text-white shadow-2xl scale-105 ring-4 ring-slate-100'
-                            : 'bg-white/40 border border-white/60 hover:bg-white hover:shadow-xl'
+                            : 'bg-white/40 border border-white/60 hover:bg-white hover:shadow-xl hover-lift cursor-pointer'
                           }`}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex-shrink-0">
-                            {completedTopics.includes(topic.id) ? (
+                          <div className="shrink-0">
+                            {topicLocked ? (
+                              <div className="w-6 h-6 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-black text-amber-700 bg-amber-100">
+                                🔒
+                              </div>
+                            ) : completedTopics.includes(topic.id) ? (
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center ${currentTopicId === topic.id ? 'bg-green-400 text-slate-900' : 'bg-green-500 text-white'
                                 } shadow-lg`}>
                                 <span className="text-[10px] font-black">✓</span>
                               </div>
                             ) : (
-                              <div className={`w-6 h-6 rounded-full border-2 ${currentTopicId === topic.id ? 'border-white/40' : 'border-slate-200 group-hover:border-blue-500'
-                                } transition-colors`} />
+                              <div className={`w-6 h-6 rounded-full border-2 ${currentTopicId === topic.id ? 'border-white/40' : 'border-slate-200'} transition-colors`} />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className={`text-sm font-black transition-colors ${currentTopicId === topic.id ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
+                            <p className={`text-sm font-black transition-colors ${topicLocked
+                              ? 'text-slate-600'
+                              : currentTopicId === topic.id
+                                ? 'text-white'
+                                : 'text-slate-900'
                               }`}>
                               {topic.title}
                             </p>
-                            <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${currentTopicId === topic.id ? 'text-slate-400' : 'text-slate-400 group-hover:text-slate-500'
+                            <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${topicLocked
+                              ? 'text-slate-500'
+                              : currentTopicId === topic.id
+                                ? 'text-slate-400'
+                                : 'text-slate-400'
                               }`}>
-                              {Math.floor(topic.duration / 60)}min
+                              {topicDuration}
                             </p>
+                            {topicLocked && (
+                              <p className="text-[10px] font-bold text-amber-700 mt-1">
+                                {topic.availability_message || module.availability_message || `Unlocks on ${formatAvailability(topic.available_at || module.available_at) || 'scheduled date'}`}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </Link>
-                  ))
+                    );
+
+                    if (topicLocked) {
+                      return <div key={topic.id}>{topicCard}</div>;
+                    }
+
+                    return (
+                      <Link
+                        key={topic.id}
+                        href={`/courses/${courseId}/topics/${topic.id}`}
+                        className="group"
+                      >
+                        {topicCard}
+                      </Link>
+                    );
+                  })
                 ) : (
                   <div className="text-center py-4 text-slate-500">
                     <p className="text-sm">No topics available for this module</p>
@@ -206,7 +257,7 @@ export const Curriculum: React.FC<CurriculumProps> = ({
                 )}
               </div>
             </div>
-          ))
+          );})
         ) : (
           <div className="text-center py-8 text-slate-500">
             <div className="text-4xl mb-3">📚</div>

@@ -39,6 +39,20 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(true);
 
+  const isDateLocked = (dateValue?: string | null) => {
+    if (!dateValue) return false;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.getTime() > Date.now();
+  };
+
+  const formatAvailability = (dateValue?: string | null) => {
+    if (!dateValue) return null;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue;
+    return date.toLocaleString();
+  };
+
   // Handle when Read Aloud completes (move to next topic in autonomous mode)
   const handleReadAloudComplete = async () => {
     if (isAutoPilotActive) {
@@ -280,7 +294,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto py-8 sm:py-16 px-4 sm:px-6 lg:px-12 flex items-center justify-center min-h-[400px]">
+      <div className="max-w-6xl mx-auto py-8 sm:py-16 px-4 sm:px-6 lg:px-12 flex items-center justify-center min-h-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p className="text-slate-600 font-medium">Loading topic content...</p>
@@ -291,7 +305,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
 
   if (error || !topic || !course) {
     return (
-      <div className="max-w-6xl mx-auto py-8 sm:py-16 px-4 sm:px-6 lg:px-12 flex items-center justify-center min-h-[400px]">
+      <div className="max-w-6xl mx-auto py-8 sm:py-16 px-4 sm:px-6 lg:px-12 flex items-center justify-center min-h-100">
         <div className="text-center">
           <h1 className="text-2xl font-black text-slate-900 mb-4">
             {error || 'Topic Not Found'}
@@ -302,6 +316,40 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
           <Link href={`/courses/${courseId}`} className="text-blue-600 font-bold hover:underline">
             ← Back to Course
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentModule = course.modules?.find((module) =>
+    module.topics?.some((courseTopic) => courseTopic.id === topicId)
+  );
+  const courseTopic = currentModule?.topics?.find((courseTopic) => courseTopic.id === topicId);
+  const moduleLocked = (currentModule?.is_locked === true) || isDateLocked(currentModule?.available_at);
+  const topicLocked = moduleLocked || (topic.is_locked === true) || (courseTopic?.is_locked === true) || isDateLocked(topic.available_at || courseTopic?.available_at);
+  const topicLockMessage = topic.availability_message || courseTopic?.availability_message || currentModule?.availability_message || `This topic will be available on ${formatAvailability(topic.available_at || courseTopic?.available_at || currentModule?.available_at) || 'the scheduled date'}.`;
+
+  if (topicLocked) {
+    return (
+      <div className="max-w-4xl mx-auto py-8 sm:py-16 px-4 sm:px-6 lg:px-12 flex items-center justify-center min-h-105">
+        <div className="w-full max-w-2xl bg-amber-50 border border-amber-200 rounded-2xl p-6 sm:p-8 text-center space-y-4">
+          <div className="text-4xl">🔒</div>
+          <h1 className="text-2xl sm:text-3xl font-black text-amber-900">Topic Locked</h1>
+          <p className="text-amber-800 font-bold text-sm sm:text-base">{topicLockMessage}</p>
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href={`/courses/${courseId}`}
+              className="px-5 py-3 rounded-xl bg-white border border-amber-300 text-amber-900 font-black hover:bg-amber-100 transition-colors"
+            >
+              Back to Course
+            </Link>
+            <Link
+              href="/dashboard/student/courses"
+              className="px-5 py-3 rounded-xl bg-amber-600 text-white font-black hover:bg-amber-700 transition-colors"
+            >
+              Browse Courses
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -348,7 +396,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
 
       {/* AI Intelligence Card */}
       {summary && (
-        <div className="glass-card rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 lg:p-10 border-blue-100 shadow-2xl shadow-blue-500/10 relative overflow-hidden animate-bounce-in">
+        <div className="glass-card rounded-3xl sm:rounded-4xl p-6 sm:p-8 lg:p-10 border-blue-100 shadow-2xl shadow-blue-500/10 relative overflow-hidden animate-bounce-in">
           <div className="absolute top-0 right-0 p-6 sm:p-8 text-3xl sm:text-4xl opacity-10">✨</div>
           <div className="relative z-10 space-y-6 sm:space-y-8">
             <div className="flex items-center gap-3 sm:gap-4">

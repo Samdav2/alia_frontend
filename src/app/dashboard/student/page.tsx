@@ -1,6 +1,4 @@
 import { LandingView } from '@/components/Dashboard/StudentDashboard/LandingView';
-import { BottomNav } from '@/components/Dashboard/StudentDashboard/BottomNav';
-import { TopNav } from '@/components/Dashboard/StudentDashboard/TopNav';
 
 export default function StudentDashboardPage() {
   // Mock user data - replace with actual auth
@@ -11,16 +9,12 @@ export default function StudentDashboardPage() {
   };
 
   return (
-    <>
-      <TopNav />
-      <div className="pt-24 lg:pt-20">
-        <LandingView
-          studentName={studentData.name}
-          studentId={studentData.id}
-          department={studentData.department}
-        />
-      </div>
-      <BottomNav />
-    </>
+    <div className="pt-6 sm:pt-8 lg:pt-0">
+      <LandingView
+        studentName={studentData.name}
+        studentId={studentData.id}
+        department={studentData.department}
+      />
+    </div>
   );
 }

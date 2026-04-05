@@ -53,7 +53,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
       setIsEnrolled(true);
       showNotification(`Successfully enrolled in ${course.title}! 🎉`, 'success');
       textToSpeechService.announce(`You have successfully enrolled in ${course.title}. You can now start your first lesson!`);
-      
+
       // Reload course data to get updated enrollment status
       loadCourseData();
     } catch (err) {
@@ -67,12 +67,41 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
 
   const getFirstTopicId = () => {
     if (course?.modules && course.modules.length > 0) {
-      const firstModule = course.modules[0];
-      if (firstModule.topics && firstModule.topics.length > 0) {
-        return firstModule.topics[0].id;
+      for (const courseModule of course.modules) {
+        const moduleLocked = courseModule.is_locked === true || isDateLocked(courseModule.available_at);
+        if (moduleLocked) continue;
+        const firstAvailableTopic = courseModule.topics?.find((topic) => {
+          const topicLocked = topic.is_locked === true || isDateLocked(topic.available_at);
+          return !topicLocked;
+        });
+        if (firstAvailableTopic) {
+          return firstAvailableTopic.id;
+        }
       }
     }
     return null;
+  };
+
+  const formatDuration = (duration: string | number | undefined) => {
+    if (duration === undefined || duration === null) return '—';
+    if (typeof duration === 'number') {
+      return `${Math.max(1, Math.round(duration / 60))}m`;
+    }
+    return duration;
+  };
+
+  const formatAvailability = (dateValue?: string | null) => {
+    if (!dateValue) return null;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue;
+    return date.toLocaleString();
+  };
+
+  const isDateLocked = (dateValue?: string | null) => {
+    if (!dateValue) return false;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.getTime() > Date.now();
   };
 
   const firstTopicId = getFirstTopicId();
@@ -100,6 +129,23 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
           </p>
           <Link href="/dashboard/student/courses" className="text-blue-600 font-bold hover:underline">
             ← Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course.is_active) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="max-w-lg w-full text-center bg-slate-50 border border-slate-200 rounded-2xl p-8">
+          <div className="text-5xl mb-4">🚫</div>
+          <h1 className="text-2xl font-black text-slate-900 mb-3">Course Not Available</h1>
+          <p className="text-slate-600 font-medium mb-6">
+            This course is currently in draft mode and is not open for enrollment yet.
+          </p>
+          <Link href="/dashboard/student/courses" className="inline-flex items-center gap-2 text-blue-600 font-bold hover:underline">
+            <span>←</span> Back to Marketplace
           </Link>
         </div>
       </div>
@@ -173,7 +219,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
                     {firstTopicId ? (
                       <Link
                         href={`/courses/${courseId}/topics/${firstTopicId}`}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-black text-center hover:shadow-xl transition-all hover-lift block"
+                        className="w-full px-6 py-4 bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-xl font-black text-center hover:shadow-xl transition-all hover-lift block"
                       >
                         Start Learning →
                       </Link>
@@ -238,65 +284,85 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
 
           <div className="space-y-6">
             {course.modules && course.modules.length > 0 ? (
-              course.modules.map((module, moduleIdx) => (
+              course.modules.map((module) => {
+                const moduleLocked = module.is_locked === true || isDateLocked(module.available_at);
+                return (
                 <div key={module.id} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-black text-slate-700 text-base sm:text-lg">
                       Module {module.order}: {module.title}
                     </h3>
-                    <span className="text-xs text-slate-500 font-medium">{module.duration}</span>
+                    <div className="flex items-center gap-2">
+                      {moduleLocked && (
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Locked</span>
+                      )}
+                      <span className="text-xs text-slate-500 font-medium">{module.duration}</span>
+                    </div>
                   </div>
 
                   {module.description && (
                     <p className="text-sm text-slate-600 font-medium mb-3">{module.description}</p>
                   )}
 
+                  {moduleLocked && (
+                    <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      {module.availability_message || `Available on ${formatAvailability(module.available_at) || 'scheduled date'}`}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     {module.topics && module.topics.length > 0 ? (
-                      module.topics.map((topic, topicIdx) => (
+                      module.topics.map((topic) => {
+                        const topicLocked = moduleLocked || topic.is_locked === true || isDateLocked(topic.available_at);
+                        return (
                         <div
                           key={topic.id}
-                          className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all ${isEnrolled
+                          className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all ${(isEnrolled && !topicLocked)
                             ? 'bg-white border-gray-200 hover:bg-gray-50 hover:shadow-md cursor-pointer'
                             : 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
                             }`}
                           onClick={() => {
-                            if (isEnrolled) {
+                            if (isEnrolled && !topicLocked) {
                               window.location.href = `/courses/${courseId}/topics/${topic.id}`;
                             }
                           }}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${isEnrolled ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${(isEnrolled && !topicLocked) ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'
                               }`}>
                               {topic.order}
                             </div>
                             <div>
                               <h4 className="font-bold text-slate-900 text-sm sm:text-base">{topic.title}</h4>
                               <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                                <span>{Math.floor(topic.duration / 60)}m</span>
+                                <span>{formatDuration(topic.duration)}</span>
                                 <span>•</span>
                                 <span className="capitalize">{topic.content_type}</span>
                               </div>
+                              {topicLocked && (
+                                <div className="text-[11px] text-amber-700 font-bold mt-1">
+                                  {topic.availability_message || `Locked until ${formatAvailability(topic.available_at) || 'scheduled time'}`}
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {!isEnrolled && (
+                          {(!isEnrolled || topicLocked) && (
                             <div className="flex items-center gap-2 text-slate-400">
                               <span className="text-xs font-bold">🔒</span>
                               <span className="text-xs font-bold hidden sm:inline">Locked</span>
                             </div>
                           )}
                         </div>
-                      ))
+                      );})
                     ) : (
                       <div className="text-center py-4 text-slate-500">
-                        <p className="text-sm">No topics available for this module</p>
+                        <p className="text-sm">{moduleLocked ? 'Topics will appear when this module unlocks' : 'No topics available for this module'}</p>
                       </div>
                     )}
                   </div>
                 </div>
-              ))
+              );})
             ) : (
               <div className="text-center py-8 text-slate-500">
                 <div className="text-4xl mb-3">📚</div>

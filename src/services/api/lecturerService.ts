@@ -18,6 +18,7 @@ export interface CreateModuleData {
   description: string;
   order: number;
   duration: string;
+  available_at?: string | null;
 }
 
 export interface CreateTopicData {
@@ -27,6 +28,7 @@ export interface CreateTopicData {
   content_type: 'text' | 'video' | 'interactive';
   order: number;
   duration: string; // Changed from number to string to match backend
+  available_at?: string | null;
   resources?: Array<{
     type: string;
     url: string;
@@ -170,6 +172,17 @@ export interface UploadProgress {
   error?: string;
 }
 
+type Pagination = Record<string, unknown>;
+
+interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  topic_id?: string;
+  questions?: QuizQuestion[];
+  [key: string]: unknown;
+}
+
 class LecturerService {
   // ========== COURSE MANAGEMENT ==========
 
@@ -195,7 +208,7 @@ class LecturerService {
     page?: number;
     limit?: number;
     status?: 'active' | 'draft' | 'archived';
-  }): Promise<{ courses: Course[]; pagination: any }> {
+  }): Promise<{ courses: Course[]; pagination: Pagination }> {
     const response = await apiClient.get('/api/lecturer/courses/my', { params });
     return response.data.data;
   }
@@ -267,19 +280,19 @@ class LecturerService {
   // ========== QUIZ MANAGEMENT ==========
 
   // Get quizzes for a course or topic
-  async getQuizzes(params?: { course_id?: string; topic_id?: string }): Promise<any[]> {
+  async getQuizzes(params?: { course_id?: string; topic_id?: string }): Promise<Quiz[]> {
     const response = await apiClient.get('/api/lecturer/quizzes', { params });
     return response.data.data.quizzes;
   }
 
   // Create quiz
-  async createQuiz(data: CreateQuizData & { topic_id: string }): Promise<any> {
+  async createQuiz(data: CreateQuizData & { topic_id: string }): Promise<Quiz> {
     const response = await apiClient.post('/api/lecturer/quizzes', data);
     return response.data.data;
   }
 
   // Update quiz
-  async updateQuiz(quizId: string, data: Partial<CreateQuizData>): Promise<any> {
+  async updateQuiz(quizId: string, data: Partial<CreateQuizData>): Promise<Quiz> {
     const response = await apiClient.put(`/api/lecturer/quizzes/${quizId}`, data);
     return response.data.data;
   }
@@ -296,7 +309,7 @@ class LecturerService {
     page?: number;
     limit?: number;
     status?: 'active' | 'completed' | 'dropped';
-  }): Promise<{ enrollments: CourseEnrollment[]; pagination: any }> {
+  }): Promise<{ enrollments: CourseEnrollment[]; pagination: Pagination }> {
     const response = await apiClient.get(`/api/lecturer/courses/${courseId}/enrollments`, { params });
     return response.data.data;
   }
@@ -343,7 +356,7 @@ class LecturerService {
 
   // Enhanced file upload with context
   async uploadFile(
-    file: File, 
+    file: File,
     type: 'thumbnail' | 'video' | 'document' | 'resource' | 'image',
     context: {
       type: 'course' | 'module' | 'topic' | 'general';
@@ -357,7 +370,7 @@ class LecturerService {
       formData.append('file', file);
       formData.append('type', type);
       formData.append('context', context.type);
-      
+
       if (context.courseId) formData.append('course_id', context.courseId);
       if (context.moduleId) formData.append('module_id', context.moduleId);
       if (context.topicId) formData.append('topic_id', context.topicId);
@@ -403,9 +416,10 @@ class LecturerService {
       console.log('📡 Calling backend API: DELETE /api/files/' + fileId);
       const response = await apiClient.delete(`/api/files/${fileId}`);
       console.log('✅ Backend delete successful:', response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Always fallback to mock delete for testing when backend is not available
-      console.warn('⚠️ Backend API failed, using mock delete:', error?.message || error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn('⚠️ Backend API failed, using mock delete:', errorMessage);
       console.log('🔄 Falling back to mock service...');
       const { mockFileService } = await import('@/services/mockFileService');
       await mockFileService.deleteFile(fileId);

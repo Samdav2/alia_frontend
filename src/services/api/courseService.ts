@@ -27,6 +27,9 @@ export interface Module {
   description: string;
   order: number;
   duration: string;
+  available_at?: string | null;
+  is_locked?: boolean;
+  availability_message?: string;
 }
 
 export interface Topic {
@@ -37,8 +40,15 @@ export interface Topic {
   content: string;
   content_type: 'text' | 'video' | 'interactive';
   order: number;
-  duration: number;
-  resources: any[];
+  duration: string | number;
+  available_at?: string | null;
+  is_locked?: boolean;
+  availability_message?: string;
+  resources?: Array<Record<string, unknown>>;
+  media_files?: Array<Record<string, unknown>>;
+  assessments?: Array<Record<string, unknown>>;
+  prerequisites?: string[];
+  learning_objectives?: string[];
 }
 
 export interface CourseDetails extends Course {

@@ -31,11 +31,12 @@ export const CourseMarketplace: React.FC = () => {
         page: 1,
         limit: 50 // Load more courses for marketplace
       });
-      setCourses(data.courses);
-      
+      const publishedCourses = data.courses.filter((course) => course.is_active);
+      setCourses(publishedCourses);
+
       // Use enrollment status from API response instead of separate calls
       const enrollmentStatus: Record<string, boolean> = {};
-      for (const course of data.courses) {
+      for (const course of publishedCourses) {
         enrollmentStatus[course.id] = course.is_enrolled || false;
       }
       setEnrollments(enrollmentStatus);
@@ -50,19 +51,19 @@ export const CourseMarketplace: React.FC = () => {
   const handleEnrollment = async (courseId: string, courseTitle: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (enrolling[courseId]) return;
-    
+
     try {
       setEnrolling(prev => ({ ...prev, [courseId]: true }));
-      
+
       // Try API enrollment first
       try {
         await enrollmentAPIService.enrollInCourse(courseId);
         setEnrollments(prev => ({ ...prev, [courseId]: true }));
         showNotification(`Successfully enrolled in ${courseTitle}! 🎉`, 'success');
         textToSpeechService.announce(`You have successfully enrolled in ${courseTitle}. You can now start learning!`);
-        
+
         // Reload courses to get updated enrollment status
         loadCourses();
       } catch (apiError) {
@@ -90,7 +91,7 @@ export const CourseMarketplace: React.FC = () => {
 
   // Filter and sort courses
   const filteredCourses = useMemo(() => {
-    let filtered = courses.filter(course => {
+    const filtered = courses.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            course.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -130,7 +131,7 @@ export const CourseMarketplace: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700">
             <p className="font-medium">{error}</p>
-            <button 
+            <button
               onClick={loadCourses}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
@@ -152,7 +153,7 @@ export const CourseMarketplace: React.FC = () => {
               <span>←</span> Dashboard
             </Link>
           </div>
-          
+
           <div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
               Course <span className="text-blue-600">Marketplace</span>
@@ -241,7 +242,7 @@ export const CourseMarketplace: React.FC = () => {
               </label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'popular' | 'rating' | 'newest')}
                 className="w-full bg-white/60 border border-white/80 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="popular">Most Popular</option>
@@ -263,9 +264,9 @@ export const CourseMarketplace: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredCourses.map(course => (
             <Link key={course.id} href={`/courses/${course.id}`} className="group">
-              <div className="glass-card rounded-[20px] sm:rounded-[32px] p-6 sm:p-8 hover-lift border-white/60 h-full flex flex-col">
+              <div className="glass-card rounded-[20px] sm:rounded-4xl p-6 sm:p-8 hover-lift border-white/60 h-full flex flex-col">
                 {/* Thumbnail */}
-                <div className="w-full aspect-video bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-5xl sm:text-6xl mb-4 sm:mb-6 group-hover:scale-105 transition-transform">
+                <div className="w-full aspect-video bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-5xl sm:text-6xl mb-4 sm:mb-6 group-hover:scale-105 transition-transform">
                   {course.thumbnail || '📚'}
                 </div>
 
@@ -329,9 +330,9 @@ export const CourseMarketplace: React.FC = () => {
 
                 {/* Enroll Button */}
                 <div className="mt-4 sm:mt-6 flex gap-2">
-                  <Link 
+                  <Link
                     href={`/courses/${course.id}`}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:shadow-xl transition-all hover-lift text-center"
+                    className="flex-1 px-4 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:shadow-xl transition-all hover-lift text-center"
                   >
                     View Course →
                   </Link>
@@ -341,7 +342,7 @@ export const CourseMarketplace: React.FC = () => {
                       <span>Enrolled</span>
                     </div>
                   ) : (
-                    <button 
+                    <button
                       onClick={(e) => handleEnrollment(course.id, course.title, e)}
                       disabled={enrolling[course.id]}
                       className="px-4 py-3 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition-all hover-lift disabled:opacity-50 disabled:cursor-not-allowed"
@@ -357,7 +358,7 @@ export const CourseMarketplace: React.FC = () => {
 
         {/* Empty State */}
         {filteredCourses.length === 0 && (
-          <div className="glass-card rounded-[32px] p-12 sm:p-16 text-center border-white/60">
+          <div className="glass-card rounded-4xl p-12 sm:p-16 text-center border-white/60">
             <div className="text-6xl sm:text-7xl mb-6">🔍</div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">
               No courses found

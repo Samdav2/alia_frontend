@@ -15,6 +15,7 @@ type TabType = 'courses' | 'builder' | 'progress' | 'performance' | 'notificatio
 export const LecturerDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('courses');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleEditCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
@@ -31,63 +32,130 @@ export const LecturerDashboard: React.FC = () => {
     { id: 'alerts', label: 'Alerts', icon: '🔔' },
   ];
 
+  const activeTabData = tabs.find((tab) => tab.id === activeTab);
+
   return (
-    <div className="min-h-screen soft-gradient-bg">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-nav border-b border-white/40 shadow-xl shadow-slate-950/5">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 py-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-1">
+    <div className="min-h-screen soft-gradient-bg overflow-x-hidden">
+      <header className="sticky top-0 z-40 glass-nav border-b border-white/40 shadow-xl shadow-slate-950/5">
+        <div className="max-w-400 mx-auto px-4 sm:px-6 lg:px-10 py-3 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 w-full">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-xl">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="lg:hidden w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center"
+                aria-label="Open lecturer menu"
+              >
+                ☰
+              </button>
+              <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-xl">
                 L
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
                 Lecturer <span className="alia-gradient-text">Hub</span>
               </h1>
             </div>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs">
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[9px] sm:text-xs mt-1 wrap-break-word">
               Course Management • <span className="text-blue-600">Teaching Excellence</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="glass-card px-4 py-2 rounded-xl flex items-center gap-3 border-blue-100 shadow-xl shadow-blue-500/5">
-              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Teaching Mode: Active</span>
-            </div>
+          <div className="glass-card w-full sm:w-auto px-3 sm:px-4 py-2 rounded-xl flex items-center justify-center sm:justify-start gap-2 sm:gap-3 border-blue-100 shadow-xl shadow-blue-500/5 shrink-0">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-[9px] sm:text-xs font-black text-slate-900 uppercase tracking-widest text-center sm:text-left">Teaching Mode: Active</span>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 border-t border-slate-100/50">
-          <div className="flex gap-2 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 sm:gap-3 py-6 px-1 sm:px-2 font-black uppercase tracking-widest text-[9px] sm:text-xs transition-all border-b-4 shrink-0 whitespace-nowrap ${activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-900'
-                  }`}
-              >
-                <span className="text-base sm:text-lg">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="lg:hidden border-t border-white/40 px-4 sm:px-6 py-2">
+          <p className="text-[11px] font-bold text-slate-600 truncate">
+            {activeTabData?.icon} {activeTabData?.label}
+          </p>
         </div>
       </header>
 
-      {/* Content Area */}
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 py-16 opacity-0 animate-[fade-in-only_0.5s_ease-out_forwards]">
-        <div className="glass-card rounded-[40px] p-8 sm:p-12 border-white shadow-2xl shadow-slate-900/5 min-h-[600px]">
-          {activeTab === 'courses' && <CourseManagement onEditCourse={handleEditCourse} />}
-          {activeTab === 'builder' && <CourseBuilder initialCourseId={selectedCourseId} />}
-          {activeTab === 'progress' && <StudentProgress />}
-          {activeTab === 'performance' && <PerformanceMetrics />}
-          {activeTab === 'notifications' && <NotificationCenter />}
-          {activeTab === 'demographics' && <ClassDemographics />}
-          {activeTab === 'alerts' && <AlertSystem />}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <button
+            className="absolute inset-0 bg-slate-900/40"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close lecturer menu overlay"
+          />
+          <aside className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white border-r border-slate-200 shadow-2xl p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+              <h2 className="text-lg font-black text-slate-900">Lecturer Menu</h2>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-9 h-9 rounded-lg border border-slate-200 text-slate-600"
+                aria-label="Close lecturer menu"
+              >
+                ✕
+              </button>
+            </div>
+            <nav className="space-y-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${activeTab === tab.id
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                    : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <span className="text-base">{tab.icon}</span>
+                  <span className="font-bold text-sm tracking-wide">{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      <main className="max-w-400 mx-auto w-full px-3 sm:px-6 lg:px-10 py-5 sm:py-8 opacity-0 animate-[fade-in-only_0.5s_ease-out_forwards]">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-6 lg:gap-8">
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-900/5 p-4">
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] px-3 pb-2">
+                Lecturer Navigation
+              </p>
+              <nav className="space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${activeTab === tab.id
+                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                      : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                  >
+                    <span className="text-base">{tab.icon}</span>
+                    <span className="font-bold text-sm tracking-wide">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          <section className="min-w-0">
+            <div className="glass-card rounded-4xl p-5 sm:p-8 lg:p-10 border-white shadow-2xl shadow-slate-900/5 min-h-150">
+              <div className="mb-6 pb-4 border-b border-slate-200/60">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+                  <span>{activeTabData?.icon}</span>
+                  <span>{activeTabData?.label}</span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">Access your tools and teaching workflows from this section.</p>
+              </div>
+
+              {activeTab === 'courses' && <CourseManagement onEditCourse={handleEditCourse} />}
+              {activeTab === 'builder' && <CourseBuilder initialCourseId={selectedCourseId} />}
+              {activeTab === 'progress' && <StudentProgress />}
+              {activeTab === 'performance' && <PerformanceMetrics />}
+              {activeTab === 'notifications' && <NotificationCenter />}
+              {activeTab === 'demographics' && <ClassDemographics />}
+              {activeTab === 'alerts' && <AlertSystem />}
+            </div>
+          </section>
         </div>
       </main>
     </div>

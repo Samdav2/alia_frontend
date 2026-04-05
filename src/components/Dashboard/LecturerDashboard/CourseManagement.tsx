@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { lecturerService, CreateCourseData } from '@/services/api/lecturerService';
 import { Course } from '@/services/api/courseService';
-import { FileViewer } from '@/components/Shared/FileViewer';
 
 interface CourseManagementProps {
   onEditCourse: (courseId: string) => void;
@@ -12,10 +11,21 @@ interface CourseManagementProps {
 export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [isUpdatingCourse, setIsUpdatingCourse] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewingCourseFiles, setViewingCourseFiles] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateCourseData>({
+    code: '',
+    title: '',
+    description: '',
+    department: '',
+    level: 'beginner',
+    duration: '',
+    tags: []
+  });
+  const [editFormData, setEditFormData] = useState<CreateCourseData>({
     code: '',
     title: '',
     description: '',
@@ -87,6 +97,52 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
     }
   };
 
+  const handleUnpublishCourse = async (courseId: string) => {
+    try {
+      await lecturerService.unpublishCourse(courseId);
+      setCourses(prev => prev.map(c => c.id === courseId ? { ...c, is_active: false } : c));
+    } catch (err) {
+      setError('Failed to move course to draft');
+      console.error('Error unpublishing course:', err);
+    }
+  };
+
+  const openEditModal = (course: Course) => {
+    setEditingCourseId(course.id);
+    setEditFormData({
+      code: course.code,
+      title: course.title,
+      description: course.description,
+      department: course.department,
+      level: course.level,
+      duration: course.duration,
+      tags: course.tags || []
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingCourseId(null);
+  };
+
+  const handleUpdateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourseId) return;
+
+    try {
+      setIsUpdatingCourse(true);
+      const updatedCourse = await lecturerService.updateCourse(editingCourseId, editFormData);
+      setCourses((prevCourses) => prevCourses.map((course) => (course.id === editingCourseId ? updatedCourse : course)));
+      closeEditModal();
+    } catch (err) {
+      setError('Failed to update course');
+      console.error('Error updating course:', err);
+    } finally {
+      setIsUpdatingCourse(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -103,7 +159,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-slate-50 p-6 sm:p-8 rounded-[32px] border border-slate-200 shadow-inner">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-slate-50 p-6 sm:p-8 rounded-4xl border border-slate-200 shadow-inner">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">AI Content Studio</h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs mt-1">Deploy intelligent learning paths</p>
@@ -126,7 +182,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
       </div>
 
       {showForm && (
-        <div className="glass-card rounded-[32px] p-8 sm:p-12 border-blue-100 shadow-2xl animate-fade-in">
+        <div className="glass-card rounded-4xl p-8 sm:p-12 border-blue-100 shadow-2xl animate-fade-in">
           <h3 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">
             Configure Path
           </h3>
@@ -232,50 +288,179 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            className="absolute inset-0 bg-slate-900/50"
+            onClick={closeEditModal}
+            aria-label="Close edit course modal overlay"
+          />
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto glass-card rounded-3xl sm:rounded-4xl p-6 sm:p-8 border border-white/70 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Edit Course</h3>
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs mt-1">Update course details</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
+                aria-label="Close edit course modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateCourse} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Course Code</label>
+                  <input
+                    type="text"
+                    value={editFormData.code}
+                    onChange={(e) => setEditFormData({ ...editFormData, code: e.target.value })}
+                    className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Title</label>
+                  <input
+                    type="text"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</label>
+                <textarea
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold h-28"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</label>
+                  <input
+                    type="text"
+                    value={editFormData.department}
+                    onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
+                    className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Level</label>
+                  <select
+                    value={editFormData.level}
+                    onChange={(e) => setEditFormData({ ...editFormData, level: e.target.value as 'beginner' | 'intermediate' | 'advanced' })}
+                    className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</label>
+                  <input
+                    type="text"
+                    value={editFormData.duration}
+                    onChange={(e) => setEditFormData({ ...editFormData, duration: e.target.value })}
+                    className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={editFormData.tags.join(', ')}
+                  onChange={(e) => setEditFormData({
+                    ...editFormData,
+                    tags: e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean)
+                  })}
+                  className="w-full px-4 sm:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-100 outline-none font-bold"
+                  placeholder="AI, Education, Accessibility"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
+                <button
+                  type="submit"
+                  disabled={isUpdatingCourse}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isUpdatingCourse ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {courses.map((course) => (
           <div
             key={course.id}
-            className="glass-card rounded-[32px] p-10 border-white/60 hover-lift shadow-2xl shadow-slate-900/5 group"
+            className="glass-card rounded-3xl sm:rounded-4xl p-5 sm:p-8 lg:p-10 border-white/60 hover-lift shadow-2xl shadow-slate-900/5 group overflow-hidden"
           >
-            <div className="flex justify-between items-start mb-10">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-6 sm:mb-10">
+              <div className="min-w-0">
                 <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-2">
                   {course.code}
                 </p>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors wrap-break-word">
                   {course.title}
                 </h3>
-                <p className="text-sm text-slate-600 mt-2">{course.description}</p>
+                <p className="text-sm text-slate-600 mt-2 wrap-break-word">{course.description}</p>
               </div>
-              <div className="flex gap-3">
-                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${course.is_active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'
+              <div className="flex gap-3 self-start">
+                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${course.is_active ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
                   }`}>
-                  <div className={`w-2 h-2 rounded-full ${course.is_active ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${course.is_active ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
                   {course.is_active ? 'Published' : 'Draft'}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 border-t border-slate-100 pt-8">
-              <div className="flex gap-6 sm:gap-10">
-                <div className="space-y-1">
+            <div className="flex flex-col gap-5 sm:gap-6 border-t border-slate-100 pt-5 sm:pt-8">
+              <div className="grid grid-cols-2 gap-6 sm:gap-10 w-full">
+                <div className="space-y-1 min-w-0">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enrollments</p>
-                  <p className="text-2xl font-black text-slate-900">{course.enrollment_count || 0} <span className="text-sm">Students</span></p>
+                  <p className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{course.enrollment_count || 0} <span className="text-sm">Students</span></p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Level</p>
-                  <p className="text-2xl font-black text-slate-900 capitalize">{course.level}</p>
+                  <p className="text-xl sm:text-2xl font-black text-slate-900 capitalize leading-tight break-words">{course.level}</p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
                 {course.is_active && (
                   <a
                     href={`/courses/${course.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-12 px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2"
+                    className="h-12 px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
                     title="View Course Studio"
                   >
                     <span>👁️</span>
@@ -285,16 +470,34 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 {!course.is_active && (
                   <button
                     onClick={() => handlePublishCourse(course.id)}
-                    className="h-12 px-4 rounded-xl bg-green-50 text-green-600 flex items-center justify-center font-bold hover:bg-green-600 hover:text-white transition-all gap-2"
+                    className="h-12 px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
                     title="Publish Course"
                   >
-                    <span>📤</span>
+                    <span>⬆️</span>
                     <span className="text-[10px] uppercase font-black">Publish</span>
                   </button>
                 )}
+                {course.is_active && (
+                  <button
+                    onClick={() => handleUnpublishCourse(course.id)}
+                    className="h-12 px-4 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-700 hover:text-white transition-all gap-2 whitespace-nowrap"
+                    title="Move Course to Draft"
+                  >
+                    <span>📝</span>
+                    <span className="text-[10px] uppercase font-black">Draft</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => openEditModal(course)}
+                  className="h-12 px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
+                  title="Edit Course"
+                >
+                  <span>✏️</span>
+                  <span className="text-[10px] uppercase font-black">Edit</span>
+                </button>
                 <button
                   onClick={() => onEditCourse(course.id)}
-                  className="h-12 px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2"
+                  className="h-12 px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-slate-900 hover:text-white transition-all gap-2 whitespace-nowrap"
                   title="Edit Modules & Topics"
                 >
                   <span>⚙️</span>
@@ -302,7 +505,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 </button>
                 <button
                   onClick={() => handleDeleteCourse(course.id)}
-                  className="w-12 h-12 rounded-xl bg-slate-100 text-red-600 flex items-center justify-center font-black hover:bg-red-600 hover:text-white transition-all"
+                  className="h-12 w-full rounded-xl bg-slate-100 text-red-600 flex items-center justify-center font-black hover:bg-red-600 hover:text-white transition-all"
                   title="Delete Course"
                 >
                   🗑️
