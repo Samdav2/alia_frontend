@@ -355,6 +355,19 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
     );
   }
 
+  const durationMinutes = (() => {
+    if (typeof topic.duration === 'number') {
+      return Math.max(1, Math.floor(topic.duration / 60));
+    }
+
+    const parsedDuration = Number.parseFloat(topic.duration);
+    if (Number.isNaN(parsedDuration)) {
+      return 1;
+    }
+
+    return Math.max(1, Math.floor(parsedDuration / 60));
+  })();
+
   // ─── Main render ──────────────────────────────────────────────────────────
 
   return (
@@ -379,7 +392,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
               <span>•</span>
               <span className="text-blue-600">{actualReadTime || 'Calculating...'}</span>
               <span>•</span>
-              <span>Est. {Math.floor(topic.duration / 60)}min study time</span>
+              <span>Est. {durationMinutes}min study time</span>
             </div>
           </div>
 

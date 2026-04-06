@@ -194,6 +194,26 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
     }
   };
 
+  const normalizeTopicResources = (resources?: Array<Record<string, unknown>>) => {
+    if (!resources || resources.length === 0) {
+      return [];
+    }
+
+    return resources
+      .map((resource) => {
+        const type = typeof resource.type === 'string' ? resource.type : '';
+        const url = typeof resource.url === 'string' ? resource.url : '';
+        const title = typeof resource.title === 'string' ? resource.title : '';
+
+        if (!type || !url || !title) {
+          return null;
+        }
+
+        return { type, url, title };
+      })
+      .filter((resource): resource is { type: string; url: string; title: string } => resource !== null);
+  };
+
   const handleEditTopic = (topic: Topic, module: Module) => {
     setEditingTopic(topic);
     setSelectedModule(module);
@@ -205,7 +225,7 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
       order: topic.order || 1,
       duration: topic.duration?.toString() || '30 mins',
       available_at: topic.available_at || null,
-      resources: topic.resources || []
+      resources: normalizeTopicResources(topic.resources)
     });
     setEditorView('topic_form');
   };

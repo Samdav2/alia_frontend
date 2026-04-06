@@ -177,9 +177,14 @@ type Pagination = Record<string, unknown>;
 interface Quiz {
   id: string;
   title: string;
-  description?: string;
-  topic_id?: string;
-  questions?: QuizQuestion[];
+  description: string;
+  topic_id: string;
+  topic_title: string;
+  time_limit: number;
+  passing_score: number;
+  questions: QuizQuestion[];
+  is_active: boolean;
+  created_at: string;
   [key: string]: unknown;
 }
 
