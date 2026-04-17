@@ -1,5 +1,6 @@
 // Course Service - Backend API Integration
 import apiClient from '@/lib/apiClient';
+import { normalizeUrl } from '@/lib/urlUtils';
 
 export interface Course {
   id: string;
@@ -75,7 +76,17 @@ class CourseService {
     search?: string;
   }): Promise<CoursesListResponse> {
     const response = await apiClient.get('/api/courses', { params });
-    return response.data.data;
+    const data = response.data.data;
+
+    // Normalize thumbnails
+    if (data.courses) {
+      data.courses = data.courses.map((course: Course) => ({
+        ...course,
+        thumbnail: normalizeUrl(course.thumbnail)
+      }));
+    }
+
+    return data;
   }
 
   // Get course details
@@ -84,7 +95,11 @@ class CourseService {
       throw new Error('Course ID is required');
     }
     const response = await apiClient.get(`/api/courses/${courseId}`);
-    return response.data.data;
+    const data = response.data.data;
+    if (data) {
+      data.thumbnail = normalizeUrl(data.thumbnail);
+    }
+    return data;
   }
 
   // Get course modules

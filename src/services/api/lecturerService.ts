@@ -1,6 +1,6 @@
-// Lecturer Service - Backend API Integration
 import apiClient from '@/lib/apiClient';
 import { Course, Module, Topic } from './courseService';
+import { normalizeUrl } from '@/lib/urlUtils';
 
 export interface CreateCourseData {
   code: string;
@@ -215,7 +215,17 @@ class LecturerService {
     status?: 'active' | 'draft' | 'archived';
   }): Promise<{ courses: Course[]; pagination: Pagination }> {
     const response = await apiClient.get('/api/lecturer/courses/my', { params });
-    return response.data.data;
+    const data = response.data.data;
+
+    // Normalize thumbnails
+    if (data.courses) {
+      data.courses = data.courses.map((course: Course) => ({
+        ...course,
+        thumbnail: normalizeUrl(course.thumbnail)
+      }));
+    }
+
+    return data;
   }
 
   // Publish course
@@ -385,7 +395,11 @@ class LecturerService {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data.data;
+      const data = response.data.data;
+      return {
+        ...data,
+        url: normalizeUrl(data.url)
+      };
     } catch (error) {
       console.warn('API not available, using mock upload:', error);
       // Fallback to mock upload for testing
@@ -405,7 +419,11 @@ class LecturerService {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    const resData = response.data;
+    if (resData.success && resData.data) {
+      resData.data.thumbnail_url = normalizeUrl(resData.data.thumbnail_url);
+    }
+    return resData;
   }
 
   // Get files for specific context
@@ -417,7 +435,11 @@ class LecturerService {
   }): Promise<FileInfo[]> {
     try {
       const response = await apiClient.get('/api/files', { params });
-      return response.data.data.files || [];
+      const files = response.data.data.files || [];
+      return files.map((file: FileInfo) => ({
+        ...file,
+        url: normalizeUrl(file.url)
+      }));
     } catch (error) {
       console.warn('API not available, using mock data:', error);
       // Fallback to mock data for testing

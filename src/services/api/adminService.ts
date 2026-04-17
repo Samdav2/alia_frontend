@@ -1,7 +1,7 @@
-// Admin Service - Backend API Integration
 import apiClient from '@/lib/apiClient';
 import { UserProfile } from './userService';
 import { Course } from './courseService';
+import { normalizeUrl } from '@/lib/urlUtils';
 
 export interface CreateUserData {
   full_name: string;
@@ -222,7 +222,17 @@ class AdminService {
     department?: string;
   }): Promise<{ courses: AdminCourse[]; pagination: any }> {
     const response = await apiClient.get('/api/admin/courses', { params });
-    return response.data.data;
+    const data = response.data.data;
+
+    // Normalize thumbnails
+    if (data.courses) {
+      data.courses = data.courses.map((course: AdminCourse) => ({
+        ...course,
+        thumbnail: normalizeUrl(course.thumbnail)
+      }));
+    }
+
+    return data;
   }
 
   // Approve course
