@@ -395,6 +395,19 @@ class LecturerService {
     }
   }
 
+  // Upload course picture (thumbnail)
+  async uploadCoursePicture(courseId: string, file: File): Promise<{ success: boolean; data: { file_id: string; thumbnail_url: string } }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post(`/api/courses/${courseId}/picture`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
   // Get files for specific context
   async getFiles(params: {
     courseId?: string;

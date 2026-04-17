@@ -2,12 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AccessibilityDropdown } from './AccessibilityDropdown';
+import { authService } from '@/services/api/authService';
+import { LayoutDashboard } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
-  const [isAccessibilityOpen, setIsAccessibilityOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    setIsAuthenticated(authService.isAuthenticated());
+    setUser(authService.getCurrentUser());
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,13 +34,22 @@ export const Navigation: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group z-50">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg lg:text-xl group-hover:shadow-xl transition-all group-hover:rotate-6 shadow-indigo-200 shadow-lg">
-              A
+          <Link href="/" className="flex items-center gap-3 lg:gap-4 group z-50">
+            <div className="relative w-10 h-10 lg:w-14 lg:h-14 group-hover:scale-110 transition-transform duration-500">
+              <img
+                src="/logo-icon.png"
+                alt="ALIA Logo"
+                className="w-full h-full object-contain mix-blend-multiply"
+              />
             </div>
-            <span className="font-bold text-xl sm:text-2xl lg:text-3xl alia-gradient-text tracking-tight">
-              ALIA
-            </span>
+            <div className="flex flex-col">
+              <span className="font-black text-xl lg:text-3xl alia-gradient-text tracking-tighter leading-none">
+                ALIA
+              </span>
+              <span className="text-[8px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 hidden sm:block">
+                Adaptive Learning & Inclusive Agent
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -52,38 +68,34 @@ export const Navigation: React.FC = () => {
 
           {/* Right Side */}
           <div className="flex items-center gap-3 lg:gap-6">
-            {/* Accessibility Icon */}
-            <div className="relative">
-              <button
-                onClick={() => setIsAccessibilityOpen(!isAccessibilityOpen)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border-2 border-slate-200 text-blue-600 flex items-center justify-center hover:border-blue-500 hover:shadow-lg transition-all hover:scale-105 shadow-sm overflow-hidden group"
-                title="Accessibility Options"
-              >
-                <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="relative z-10 text-lg sm:text-xl">♿</span>
-              </button>
-              {isAccessibilityOpen && (
-                <AccessibilityDropdown
-                  onClose={() => setIsAccessibilityOpen(false)}
-                />
-              )}
-            </div>
 
-            {/* Desktop Auth Buttons */}
-            <div className="hidden sm:flex items-center gap-4">
-              <Link
-                href="/login"
-                className="px-5 py-2.5 text-slate-700 font-bold hover:text-blue-600 transition-all"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                className="px-6 py-2.5 bg-slate-900 text-white rounded-xl hover:shadow-xl transition-all font-bold hover:scale-105 active:scale-95 shadow-lg"
-              >
-                Join ALIA
-              </Link>
-            </div>
+            {/* Desktop Auth/Dashboard Buttons */}
+            {isAuthenticated ? (
+              <div className="hidden sm:flex items-center gap-4">
+                <Link
+                  href={user?.role === 'lecturer' ? '/dashboard/lecturer' : '/dashboard/student'}
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:shadow-xl transition-all font-bold hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  Dashboard
+                </Link>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-4">
+                <Link
+                  href="/login"
+                  className="px-5 py-2.5 text-slate-700 font-bold hover:text-blue-600 transition-all"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-6 py-2.5 bg-slate-900 text-white rounded-xl hover:shadow-xl transition-all font-bold hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  Join ALIA
+                </Link>
+              </div>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -145,22 +157,35 @@ export const Navigation: React.FC = () => {
             Contact
           </Link>
 
-          <div className="flex flex-col gap-4 w-full max-w-xs mt-4 sm:mt-8">
-            <Link
-              href="/login"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full py-4 text-center text-slate-700 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:text-blue-600 font-black text-lg transition-all"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full py-4 text-center bg-slate-900 text-white rounded-2xl hover:shadow-xl transition-all font-black text-lg"
-            >
-              Join ALIA
-            </Link>
-          </div>
+          {isAuthenticated ? (
+            <div className="flex flex-col gap-4 w-full max-w-xs mt-4 sm:mt-8">
+              <Link
+                href={user?.role === 'lecturer' ? '/dashboard/lecturer' : '/dashboard/student'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-4 text-center bg-blue-600 text-white rounded-2xl hover:shadow-xl transition-all font-black text-lg flex items-center justify-center gap-2"
+              >
+                <LayoutDashboard className="w-6 h-6" />
+                Go to Dashboard
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 w-full max-w-xs mt-4 sm:mt-8">
+              <Link
+                href="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-4 text-center text-slate-700 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:text-blue-600 font-black text-lg transition-all"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-4 text-center bg-slate-900 text-white rounded-2xl hover:shadow-xl transition-all font-black text-lg"
+              >
+                Join ALIA
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>

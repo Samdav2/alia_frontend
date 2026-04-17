@@ -84,6 +84,11 @@ class AuthService {
       const expires = new Date();
       expires.setDate(expires.getDate() + 7);
       document.cookie = `auth_token=${accessToken}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+
+      const user = this.getCurrentUser();
+      if (user?.role) {
+        document.cookie = `user_role=${user.role}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+      }
     }
   }
 
@@ -94,8 +99,9 @@ class AuthService {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
 
-      // Clear cookie
+      // Clear cookies
       document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      document.cookie = 'user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
   }
 

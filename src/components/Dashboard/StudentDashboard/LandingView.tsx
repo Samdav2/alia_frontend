@@ -22,7 +22,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
   department,
 }) => {
   const { isAutoPilotActive } = useUserPreferences();
-  
+
   // Enable keyboard navigation
   useKeyboardNavigation();
 
@@ -79,8 +79,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
         <section className="pb-12 lg:pb-0">
           <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white text-lg sm:text-xl shadow-lg flex-shrink-0">
-              ✨
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-lg p-2 overflow-hidden flex-shrink-0">
+              <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
             <div>
               <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -94,7 +94,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
           <RecommendedCourses department={department} />
         </section>
       </div>
-      
+
       {/* Test Notifications - Development Tool */}
       <NotificationTest />
     </div>

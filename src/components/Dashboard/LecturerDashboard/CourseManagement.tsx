@@ -14,6 +14,9 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [isUpdatingCourse, setIsUpdatingCourse] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateCourseData>({
@@ -118,6 +121,8 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
       duration: course.duration,
       tags: course.tags || []
     });
+    setThumbnailPreview(course.thumbnail || null);
+    setThumbnailFile(null);
     setShowEditModal(true);
   };
 
@@ -132,7 +137,24 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
 
     try {
       setIsUpdatingCourse(true);
+
+      // 1. Update course basic info
       const updatedCourse = await lecturerService.updateCourse(editingCourseId, editFormData);
+
+      // 2. If a new thumbnail is selected, upload it
+      if (thumbnailFile) {
+        setIsUploadingThumbnail(true);
+        try {
+          const uploadRes = await lecturerService.uploadCoursePicture(editingCourseId, thumbnailFile);
+          updatedCourse.thumbnail = uploadRes.data.thumbnail_url;
+        } catch (uploadErr) {
+          console.error('Error uploading thumbnail:', uploadErr);
+          setError('Course info updated, but thumbnail upload failed');
+        } finally {
+          setIsUploadingThumbnail(false);
+        }
+      }
+
       setCourses((prevCourses) => prevCourses.map((course) => (course.id === editingCourseId ? updatedCourse : course)));
       closeEditModal();
     } catch (err) {
@@ -140,6 +162,18 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
       console.error('Error updating course:', err);
     } finally {
       setIsUpdatingCourse(false);
+    }
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -311,6 +345,35 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
               </button>
             </div>
 
+            <div className="mb-8 flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50 group hover:border-blue-400 transition-all">
+              <div className="relative w-40 h-40 mb-4 rounded-2xl overflow-hidden shadow-lg bg-white">
+                {thumbnailPreview ? (
+                  <img src={thumbnailPreview} alt="Course Thumbnail Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <span className="text-4xl">🖼️</span>
+                  </div>
+                )}
+                {isUploadingThumbnail && (
+                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  </div>
+                )}
+              </div>
+              <label className="cursor-pointer">
+                <span className="px-6 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm">
+                  {thumbnailPreview ? 'Change Thumbnail' : 'Upload Thumbnail'}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                />
+              </label>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">PNG, JPG or WebP (Max 2MB)</p>
+            </div>
+
             <form onSubmit={handleUpdateCourse} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
@@ -399,10 +462,10 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
                 <button
                   type="submit"
-                  disabled={isUpdatingCourse}
+                  disabled={isUpdatingCourse || isUploadingThumbnail}
                   className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isUpdatingCourse ? 'Saving...' : 'Save Changes'}
+                  {isUpdatingCourse ? 'Saving...' : isUploadingThumbnail ? 'Uploading image...' : 'Save Changes'}
                 </button>
                 <button
                   type="button"
@@ -423,23 +486,33 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
             key={course.id}
             className="glass-card rounded-3xl sm:rounded-4xl p-5 sm:p-8 lg:p-10 border-white/60 hover-lift shadow-2xl shadow-slate-900/5 group overflow-hidden"
           >
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-6 sm:mb-10">
-              <div className="min-w-0">
-                <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-2">
-                  {course.code}
-                </p>
-                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors wrap-break-word">
-                  {course.title}
-                </h3>
-                <p className="text-sm text-slate-600 mt-2 wrap-break-word">{course.description}</p>
-              </div>
-              <div className="flex gap-3 self-start">
-                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${course.is_active ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-xs font-black text-blue-600 uppercase tracking-widest">
+                {course.code}
+              </p>
+              <div className="flex gap-3">
+                <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${course.is_active ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
                   }`}>
                   <div className={`w-2 h-2 rounded-full ${course.is_active ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
                   {course.is_active ? 'Published' : 'Draft'}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4 mb-6 sm:mb-8">
+              <h3 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors wrap-break-word">
+                {course.title}
+              </h3>
+              <div className="w-full aspect-video rounded-3xl overflow-hidden bg-slate-100 shadow-xl border border-slate-200">
+                {course.thumbnail ? (
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <span className="text-5xl">📚</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-base text-slate-600 wrap-break-word leading-relaxed">{course.description}</p>
             </div>
 
             <div className="flex flex-col gap-5 sm:gap-6 border-t border-slate-100 pt-5 sm:pt-8">
@@ -454,13 +527,13 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
+              <div className="flex flex-wrap items-center gap-2 w-full overflow-x-auto pb-2 scrollbar-hide">
                 {course.is_active && (
                   <a
                     href={`/courses/${course.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-12 px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
+                    className="h-10 px-3 sm:px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap min-w-fit flex-1 sm:flex-none"
                     title="View Course Studio"
                   >
                     <span>👁️</span>
@@ -470,7 +543,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 {!course.is_active && (
                   <button
                     onClick={() => handlePublishCourse(course.id)}
-                    className="h-12 px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
+                    className="h-10 px-3 sm:px-4 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap min-w-fit flex-1 sm:flex-none"
                     title="Publish Course"
                   >
                     <span>⬆️</span>
@@ -480,7 +553,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 {course.is_active && (
                   <button
                     onClick={() => handleUnpublishCourse(course.id)}
-                    className="h-12 px-4 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-700 hover:text-white transition-all gap-2 whitespace-nowrap"
+                    className="h-10 px-3 sm:px-4 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-700 hover:text-white transition-all gap-2 whitespace-nowrap min-w-fit flex-1 sm:flex-none"
                     title="Move Course to Draft"
                   >
                     <span>📝</span>
@@ -489,7 +562,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 )}
                 <button
                   onClick={() => openEditModal(course)}
-                  className="h-12 px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap"
+                  className="h-10 px-3 sm:px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-blue-600 hover:text-white transition-all gap-2 whitespace-nowrap min-w-fit flex-1 sm:flex-none"
                   title="Edit Course"
                 >
                   <span>✏️</span>
@@ -497,7 +570,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 </button>
                 <button
                   onClick={() => onEditCourse(course.id)}
-                  className="h-12 px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-slate-900 hover:text-white transition-all gap-2 whitespace-nowrap"
+                  className="h-10 px-3 sm:px-4 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center font-bold hover:bg-slate-900 hover:text-white transition-all gap-2 whitespace-nowrap min-w-fit flex-1 sm:flex-none"
                   title="Edit Modules & Topics"
                 >
                   <span>⚙️</span>
@@ -505,7 +578,7 @@ export const CourseManagement: React.FC<CourseManagementProps> = ({ onEditCourse
                 </button>
                 <button
                   onClick={() => handleDeleteCourse(course.id)}
-                  className="h-12 w-full rounded-xl bg-slate-100 text-red-600 flex items-center justify-center font-black hover:bg-red-600 hover:text-white transition-all"
+                  className="h-10 w-10 sm:w-12 rounded-xl bg-slate-100 text-red-600 flex items-center justify-center font-black hover:bg-red-600 hover:text-white transition-all flex-shrink-0"
                   title="Delete Course"
                 >
                   🗑️

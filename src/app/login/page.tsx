@@ -51,8 +51,8 @@ export default function LoginPage() {
           className="relative z-10"
         >
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-900/20 group-hover:scale-110 group-hover:rotate-3 transition-all">
-              A
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl shadow-blue-900/20 group-hover:scale-110 group-hover:rotate-3 transition-all p-2 overflow-hidden">
+              <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
             <span className="text-3xl font-black text-white tracking-tighter">ALIA</span>
           </Link>

@@ -267,8 +267,8 @@ export const AIChatInterface: React.FC = () => {
         <div className="glass-card rounded-b-[24px] sm:rounded-b-[32px] p-4 sm:p-6 lg:p-8 border-b border-white/60 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-lg sm:text-xl lg:text-2xl animate-float shadow-lg">
-                A
+              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center animate-float shadow-lg p-2 overflow-hidden">
+                <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
@@ -301,17 +301,19 @@ export const AIChatInterface: React.FC = () => {
             >
               {/* Avatar */}
               <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-base ${message.role === 'user'
-                  ? 'bg-gradient-to-br from-slate-700 to-slate-900'
-                  : 'bg-gradient-to-br from-blue-600 to-purple-600'
+                ? 'bg-gradient-to-br from-slate-700 to-slate-900'
+                : 'bg-gradient-to-br from-blue-600 to-purple-600'
                 }`}>
-                {message.role === 'user' ? '👤' : 'A'}
+                {message.role === 'user' ? '👤' : (
+                  <img src="/logo-icon.png" alt="ALIA Logo" className="w-5 h-5 sm:w-6 sm:h-6 object-contain mix-blend-multiply" />
+                )}
               </div>
 
               {/* Message Bubble */}
               <div className={`flex flex-col max-w-[85%] sm:max-w-[80%] lg:max-w-[75%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className={`glass-card rounded-xl sm:rounded-2xl lg:rounded-3xl p-3 sm:p-4 lg:p-6 ${message.role === 'user'
-                    ? 'bg-slate-900 text-white border-slate-800'
-                    : 'bg-white/80 text-slate-900 border-white/60'
+                  ? 'bg-slate-900 text-white border-slate-800'
+                  : 'bg-white/80 text-slate-900 border-white/60'
                   }`}>
                   <p className="text-xs sm:text-sm lg:text-base font-medium leading-relaxed whitespace-pre-wrap">
                     {message.content}
@@ -395,8 +397,8 @@ export const AIChatInterface: React.FC = () => {
           {/* Loading Indicator */}
           {isLoading && !isProcessing && (
             <div className="flex gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                A
+              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1.5 overflow-hidden">
+                <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
               </div>
               <div className="glass-card rounded-2xl p-4 bg-white/80">
                 <div className="flex gap-2">

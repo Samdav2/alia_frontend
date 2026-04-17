@@ -10,7 +10,7 @@ import { VoiceSettingsPanel } from './VoiceSettingsPanel';
 export const AutonomousAgentPanel: React.FC = () => {
   const { isAutoPilotActive, setAutoPilotActive } = useUserPreferences();
   const { status, progress, coursesCompleted, resetProgress } = useAutoPilot();
-  
+
   const agentState = autonomousAgentService.getState();
   const currentCourse = agentState.currentCourse ? COURSES[agentState.currentCourse] : null;
   const [voiceEnabled, setVoiceEnabled] = React.useState(autonomousAgentService.getVoiceEnabled());
@@ -31,12 +31,11 @@ export const AutonomousAgentPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-all ${
-            isAutoPilotActive 
-              ? 'bg-gradient-to-br from-purple-600 to-blue-600 animate-pulse' 
+          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transition-all p-2 overflow-hidden ${isAutoPilotActive
+              ? 'bg-white animate-pulse ring-2 ring-purple-500'
               : 'bg-slate-200'
-          }`}>
-            🤖
+            }`}>
+            <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
           </div>
           <div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -61,11 +60,10 @@ export const AutonomousAgentPanel: React.FC = () => {
           {/* Voice Toggle */}
           <button
             onClick={handleVoiceToggle}
-            className={`p-2 sm:p-3 rounded-xl font-black text-sm transition-all hover-lift ${
-              voiceEnabled
+            className={`p-2 sm:p-3 rounded-xl font-black text-sm transition-all hover-lift ${voiceEnabled
                 ? 'bg-green-500 text-white hover:bg-green-600'
                 : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-            }`}
+              }`}
             title={voiceEnabled ? 'Voice enabled' : 'Voice disabled'}
           >
             {voiceEnabled ? '🔊' : '🔇'}
@@ -74,11 +72,10 @@ export const AutonomousAgentPanel: React.FC = () => {
           {/* Toggle Button */}
           <button
             onClick={handleToggle}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all hover-lift ${
-              isAutoPilotActive
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all hover-lift ${isAutoPilotActive
                 ? 'bg-red-500 text-white hover:bg-red-600'
                 : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-xl'
-            }`}
+              }`}
           >
             {isAutoPilotActive ? 'Stop' : 'Start'}
           </button>
@@ -86,9 +83,9 @@ export const AutonomousAgentPanel: React.FC = () => {
       </div>
 
       {/* Voice Settings Panel */}
-      <VoiceSettingsPanel 
-        isOpen={showVoiceSettings} 
-        onClose={() => setShowVoiceSettings(false)} 
+      <VoiceSettingsPanel
+        isOpen={showVoiceSettings}
+        onClose={() => setShowVoiceSettings(false)}
       />
 
       {/* Status Display */}
@@ -192,7 +189,7 @@ export const AutonomousAgentPanel: React.FC = () => {
               <span>Fully accessible for all users</span>
             </li>
           </ul>
-          
+
           <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-200">
             <p className="text-xs font-bold text-green-700">
               🔊 Voice Mode: {voiceEnabled ? 'Enabled' : 'Disabled'} - Click the speaker icon to toggle
@@ -210,7 +207,7 @@ export const AutonomousAgentPanel: React.FC = () => {
           >
             Reset All Progress (Debug)
           </button>
-          
+
           <div className="grid grid-cols-2 gap-2">
             {['1', '2', '3', '4'].map((courseId) => (
               <button

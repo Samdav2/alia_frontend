@@ -20,7 +20,13 @@ export function middleware(request: NextRequest) {
 
     // If trying to access login/signup while already logged in
     if ((pathname === '/login' || pathname === '/signup') && authToken) {
-        return NextResponse.redirect(new URL('/dashboard/student', request.url));
+        const userRole = request.cookies.get('user_role')?.value;
+        const dashboardPath = userRole === 'admin'
+            ? '/dashboard/admin'
+            : userRole === 'lecturer'
+                ? '/dashboard/lecturer'
+                : '/dashboard/student';
+        return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
 
     return NextResponse.next();

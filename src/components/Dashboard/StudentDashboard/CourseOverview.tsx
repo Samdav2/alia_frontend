@@ -154,14 +154,25 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
 
   return (
     <div className="min-h-screen bg-white pb-24 lg:pb-12 pt-6 sm:pt-12 px-4 sm:px-6 lg:px-12">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
         {/* Header */}
         <div className="space-y-4">
           <Link href="/dashboard/student/courses" className="text-blue-600 font-black text-xs sm:text-sm uppercase tracking-widest hover:underline flex items-center gap-2">
             <span>←</span> Back to Courses
           </Link>
 
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
+            {/* Course Thumbnail */}
+            <div className="w-full lg:w-[400px] flex-shrink-0">
+              <div className="w-full aspect-video lg:aspect-square bg-linear-to-br from-blue-500 to-purple-600 rounded-[40px] overflow-hidden shadow-2xl flex items-center justify-center text-6xl ring-8 ring-white/50">
+                {course.thumbnail ? (
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
+                ) : (
+                  <span>📚</span>
+                )}
+              </div>
+            </div>
+
             {/* Course Info */}
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
@@ -175,7 +186,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
                 )}
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-3xl sm:text-5xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.1]">
                 {course.title}
               </h1>
 
@@ -204,7 +215,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
             </div>
 
             {/* Enrollment Action */}
-            <div className="lg:w-80">
+            <div className="lg:w-[320px] lg:sticky lg:top-8">
               <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 {isEnrolled ? (
                   <div className="space-y-4">
@@ -287,82 +298,84 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
               course.modules.map((module) => {
                 const moduleLocked = module.is_locked === true || isDateLocked(module.available_at);
                 return (
-                <div key={module.id} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-black text-slate-700 text-base sm:text-lg">
-                      Module {module.order}: {module.title}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {moduleLocked && (
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Locked</span>
-                      )}
-                      <span className="text-xs text-slate-500 font-medium">{module.duration}</span>
+                  <div key={module.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-slate-700 text-base sm:text-lg">
+                        Module {module.order}: {module.title}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {moduleLocked && (
+                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Locked</span>
+                        )}
+                        <span className="text-xs text-slate-500 font-medium">{module.duration}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {module.description && (
-                    <p className="text-sm text-slate-600 font-medium mb-3">{module.description}</p>
-                  )}
+                    {module.description && (
+                      <p className="text-sm text-slate-600 font-medium mb-3">{module.description}</p>
+                    )}
 
-                  {moduleLocked && (
-                    <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      {module.availability_message || `Available on ${formatAvailability(module.available_at) || 'scheduled date'}`}
-                    </div>
-                  )}
+                    {moduleLocked && (
+                      <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        {module.availability_message || `Available on ${formatAvailability(module.available_at) || 'scheduled date'}`}
+                      </div>
+                    )}
 
-                  <div className="space-y-2">
-                    {module.topics && module.topics.length > 0 ? (
-                      module.topics.map((topic) => {
-                        const topicLocked = moduleLocked || topic.is_locked === true || isDateLocked(topic.available_at);
-                        return (
-                        <div
-                          key={topic.id}
-                          className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all ${(isEnrolled && !topicLocked)
-                            ? 'bg-white border-gray-200 hover:bg-gray-50 hover:shadow-md cursor-pointer'
-                            : 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
-                            }`}
-                          onClick={() => {
-                            if (isEnrolled && !topicLocked) {
-                              window.location.href = `/courses/${courseId}/topics/${topic.id}`;
-                            }
-                          }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${(isEnrolled && !topicLocked) ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'
-                              }`}>
-                              {topic.order}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-900 text-sm sm:text-base">{topic.title}</h4>
-                              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                                <span>{formatDuration(topic.duration)}</span>
-                                <span>•</span>
-                                <span className="capitalize">{topic.content_type}</span>
+                    <div className="space-y-2">
+                      {module.topics && module.topics.length > 0 ? (
+                        module.topics.map((topic) => {
+                          const topicLocked = moduleLocked || topic.is_locked === true || isDateLocked(topic.available_at);
+                          return (
+                            <div
+                              key={topic.id}
+                              className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all ${(isEnrolled && !topicLocked)
+                                ? 'bg-white border-gray-200 hover:bg-gray-50 hover:shadow-md cursor-pointer'
+                                : 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
+                                }`}
+                              onClick={() => {
+                                if (isEnrolled && !topicLocked) {
+                                  window.location.href = `/courses/${courseId}/topics/${topic.id}`;
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${(isEnrolled && !topicLocked) ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'
+                                  }`}>
+                                  {topic.order}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-900 text-sm sm:text-base">{topic.title}</h4>
+                                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                    <span>{formatDuration(topic.duration)}</span>
+                                    <span>•</span>
+                                    <span className="capitalize">{topic.content_type}</span>
+                                  </div>
+                                  {topicLocked && (
+                                    <div className="text-[11px] text-amber-700 font-bold mt-1">
+                                      {topic.availability_message || `Locked until ${formatAvailability(topic.available_at) || 'scheduled time'}`}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {topicLocked && (
-                                <div className="text-[11px] text-amber-700 font-bold mt-1">
-                                  {topic.availability_message || `Locked until ${formatAvailability(topic.available_at) || 'scheduled time'}`}
+
+                              {(!isEnrolled || topicLocked) && (
+                                <div className="flex items-center gap-2 text-slate-400">
+                                  <span className="text-xs font-bold">🔒</span>
+                                  <span className="text-xs font-bold hidden sm:inline">Locked</span>
                                 </div>
                               )}
                             </div>
-                          </div>
-
-                          {(!isEnrolled || topicLocked) && (
-                            <div className="flex items-center gap-2 text-slate-400">
-                              <span className="text-xs font-bold">🔒</span>
-                              <span className="text-xs font-bold hidden sm:inline">Locked</span>
-                            </div>
-                          )}
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-4 text-slate-500">
+                          <p className="text-sm">{moduleLocked ? 'Topics will appear when this module unlocks' : 'No topics available for this module'}</p>
                         </div>
-                      );})
-                    ) : (
-                      <div className="text-center py-4 text-slate-500">
-                        <p className="text-sm">{moduleLocked ? 'Topics will appear when this module unlocks' : 'No topics available for this module'}</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );})
+                );
+              })
             ) : (
               <div className="text-center py-8 text-slate-500">
                 <div className="text-4xl mb-3">📚</div>

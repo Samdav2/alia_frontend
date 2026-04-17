@@ -66,8 +66,8 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         <div className="bg-white/40 backdrop-blur-xl rounded-2xl p-8 border border-white/60 shadow-xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">
-              🎓
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl p-3 overflow-hidden">
+              <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900">Join ALIA</h1>
             <p className="text-slate-600 mt-2">Start your accessible learning journey</p>

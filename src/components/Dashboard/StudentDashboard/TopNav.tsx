@@ -65,9 +65,14 @@ export const TopNav: React.FC = () => {
           />
           <aside className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white border-r border-slate-200 shadow-2xl p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-              <div>
-                <h2 className="text-xl font-black text-slate-900">🎓 ALIA</h2>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mt-1">Student Workspace</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 p-2 overflow-hidden">
+                  <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">ALIA</h2>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500">Student Workspace</p>
+                </div>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -86,11 +91,10 @@ export const TopNav: React.FC = () => {
                     key={item.id}
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${isActive
                         ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     <span className="text-xl">{item.icon}</span>
                     <span>{item.label}</span>
@@ -120,9 +124,14 @@ export const TopNav: React.FC = () => {
 
       <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-72 z-50 bg-white border-r border-slate-200">
         <div className="w-full h-full text-slate-900 p-4 flex flex-col">
-          <div className="px-3 pt-2 pb-4 border-b border-slate-200">
-            <h1 className="text-2xl font-black tracking-tight">🎓 ALIA</h1>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-1">Student Workspace</p>
+          <div className="px-3 pt-2 pb-4 border-b border-slate-200 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 p-2.5 overflow-hidden">
+              <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">ALIA</h1>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Student Workspace</p>
+            </div>
           </div>
 
           <nav className="mt-4 space-y-2">
@@ -132,11 +141,10 @@ export const TopNav: React.FC = () => {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${
-                    isActive
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${isActive
                       ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
                       : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <span className="text-xl">{item.icon}</span>
                   <span>{item.label}</span>

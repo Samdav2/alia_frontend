@@ -159,8 +159,8 @@ export default function AboutPage() {
                     <div className="p-12 bg-blue-600 rounded-[40px] text-white overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
                         <div className="relative z-10 text-center space-y-8">
-                            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto text-4xl">
-                                🎓
+                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto p-4 shadow-xl overflow-hidden">
+                                <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
                             </div>
                             <h3 className="text-3xl font-black">Educational Technology, LASU</h3>
                             <p className="text-xl text-blue-50 font-medium">

@@ -93,8 +93,8 @@ export const CourseMarketplace: React.FC = () => {
   const filteredCourses = useMemo(() => {
     const filtered = courses.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           course.description.toLowerCase().includes(searchQuery.toLowerCase());
+        course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = selectedDepartment === 'all' || course.department === selectedDepartment;
       const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;
 
@@ -266,8 +266,20 @@ export const CourseMarketplace: React.FC = () => {
             <Link key={course.id} href={`/courses/${course.id}`} className="group">
               <div className="glass-card rounded-[20px] sm:rounded-4xl p-6 sm:p-8 hover-lift border-white/60 h-full flex flex-col">
                 {/* Thumbnail */}
-                <div className="w-full aspect-video bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-5xl sm:text-6xl mb-4 sm:mb-6 group-hover:scale-105 transition-transform">
-                  {course.thumbnail || '📚'}
+                <div className="w-full aspect-video bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl overflow-hidden flex items-center justify-center text-5xl sm:text-6xl mb-4 sm:mb-6 group-hover:scale-105 transition-transform shadow-lg">
+                  {course.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = ''; // Fallback logic could be added here
+                        (e.target as HTMLImageElement).parentElement!.innerHTML = '📚';
+                      }}
+                    />
+                  ) : (
+                    '📚'
+                  )}
                 </div>
 
                 {/* Course Info */}

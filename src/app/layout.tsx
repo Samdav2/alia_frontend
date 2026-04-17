@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description: "An intelligent, multi-agent platform designed to make education accessible, personalized, and inclusive for every student.",
   keywords: "ALIA, LMS, education, accessibility, AI, inclusive learning",
   authors: [{ name: "Amiola Oluwademilade Emmanuel", url: "https://lasu.edu.ng" }],
+  icons: {
+    icon: [
+      { url: '/favicon.png', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+  },
 };
 
 import { GlobalSignExecutor } from "@/components/Accessibility/GlobalSignExecutor";

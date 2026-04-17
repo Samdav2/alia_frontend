@@ -47,8 +47,8 @@ export const LecturerDashboard: React.FC = () => {
               >
                 ☰
               </button>
-              <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-xl">
-                L
+              <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm p-2 overflow-hidden">
+                <img src="/logo-icon.png" alt="ALIA Logo" className="w-full h-full object-contain mix-blend-multiply" />
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
                 Lecturer <span className="alia-gradient-text">Hub</span>
