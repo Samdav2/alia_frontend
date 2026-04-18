@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { authService } from '@/services/api/authService';
+import { userService } from '@/services/api/userService';
 import { LayoutDashboard } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
@@ -12,8 +13,27 @@ export const Navigation: React.FC = () => {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    setIsAuthenticated(authService.isAuthenticated());
-    setUser(authService.getCurrentUser());
+    const validateAuth = async () => {
+      if (authService.isAuthenticated()) {
+        try {
+          // Validate token by fetching profile
+          const profile = await userService.getProfile();
+          setIsAuthenticated(true);
+          setUser(profile);
+          authService.setCurrentUser(profile);
+        } catch (error) {
+          console.error('Auth validation failed:', error);
+          authService.logout();
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    validateAuth();
   }, []);
 
   useEffect(() => {
@@ -26,9 +46,11 @@ export const Navigation: React.FC = () => {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-        ? 'bg-white/95 backdrop-blur-lg shadow-lg'
-        : 'bg-white/80 backdrop-blur-md shadow-sm'
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${isMobileMenuOpen
+          ? 'bg-white shadow-sm'
+          : scrolled
+            ? 'bg-white/95 backdrop-blur-lg shadow-lg'
+            : 'bg-white/80 backdrop-blur-md shadow-sm'
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,7 +144,7 @@ export const Navigation: React.FC = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`lg:hidden fixed inset-0 top-[64px] bg-white/98 backdrop-blur-xl transition-all duration-300 ${isMobileMenuOpen
+        className={`lg:hidden fixed inset-0 top-[64px] bg-white transition-all duration-300 ${isMobileMenuOpen
           ? 'opacity-100 translate-x-0'
           : 'opacity-0 translate-x-full'
           } pointer-events-auto`}

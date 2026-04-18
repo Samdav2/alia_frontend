@@ -9,6 +9,8 @@ import { AlertSystem } from './AlertSystem';
 
 import { CourseBuilder } from './CourseBuilder';
 import { PerformanceMetrics } from './PerformanceMetrics';
+import { authService } from '@/services/api/authService';
+import { useRouter } from 'next/navigation';
 
 type TabType = 'courses' | 'builder' | 'progress' | 'performance' | 'notifications' | 'demographics' | 'alerts';
 
@@ -17,9 +19,18 @@ export const LecturerDashboard: React.FC = () => {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const router = useRouter();
+
   const handleEditCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
     setActiveTab('builder');
+  };
+
+  const handleLogout = async () => {
+    if (confirm('Are you sure you want to logout?')) {
+      await authService.logout();
+      router.push('/');
+    }
   };
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
@@ -107,6 +118,15 @@ export const LecturerDashboard: React.FC = () => {
                   <span className="font-bold text-sm tracking-wide">{tab.label}</span>
                 </button>
               ))}
+              <div className="pt-4 mt-4 border-t border-slate-200">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-all font-bold text-sm tracking-wide"
+                >
+                  <span className="text-base">🚪</span>
+                  <span>Logout</span>
+                </button>
+              </div>
             </nav>
           </aside>
         </div>
@@ -133,6 +153,15 @@ export const LecturerDashboard: React.FC = () => {
                     <span className="font-bold text-sm tracking-wide">{tab.label}</span>
                   </button>
                 ))}
+                <div className="pt-2 mt-2 border-t border-slate-100">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-all font-bold text-sm tracking-wide"
+                  >
+                    <span className="text-base">🚪</span>
+                    <span>Logout</span>
+                  </button>
+                </div>
               </nav>
             </div>
           </aside>
