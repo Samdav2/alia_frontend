@@ -29,7 +29,7 @@ export default function LoginPage() {
           ? '/dashboard/lecturer'
           : '/dashboard/student';
 
-      router.push(dashboardPath);
+      window.location.href = dashboardPath;
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Login failed. Please check your credentials.');
     } finally {

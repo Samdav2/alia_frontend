@@ -41,7 +41,7 @@ export const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
-      router.push('/login');
+      window.location.href = '/login';
       setIsLoggingOut(false);
     }
   };

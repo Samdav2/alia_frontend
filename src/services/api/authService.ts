@@ -32,25 +32,35 @@ class AuthService {
   // Register new user
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await apiClient.post('/api/auth/register', data);
+    const authData = response.data.data;
 
+    if (authData?.user) {
+      this.setCurrentUser(authData.user);
+    }
     // Store tokens
-    if (response.data.data?.token) {
-      this.setTokens(response.data.data.token, response.data.data.refresh_token);
+    if (authData?.token) {
+      this.setTokens(authData.token, authData.refresh_token, authData.user?.role);
     }
 
-    return response.data.data;
+    return authData;
   }
 
   // Login user
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await apiClient.post('/api/auth/login', data);
+    const authData = response.data.data;
 
-    // Store tokens
-    if (response.data.data?.token) {
-      this.setTokens(response.data.data.token, response.data.data.refresh_token);
+    // Set user first so role is available if needed
+    if (authData?.user) {
+      this.setCurrentUser(authData.user);
     }
 
-    return response.data.data;
+    // Store tokens
+    if (authData?.token) {
+      this.setTokens(authData.token, authData.refresh_token, authData.user?.role);
+    }
+
+    return authData;
   }
 
   // Refresh access token
@@ -75,7 +85,7 @@ class AuthService {
   }
 
   // Store tokens in localStorage and cookies (for middleware)
-  private setTokens(accessToken: string, refreshToken: string): void {
+  private setTokens(accessToken: string, refreshToken: string, providedRole?: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
@@ -85,9 +95,9 @@ class AuthService {
       expires.setDate(expires.getDate() + 7);
       document.cookie = `auth_token=${accessToken}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
 
-      const user = this.getCurrentUser();
-      if (user?.role) {
-        document.cookie = `user_role=${user.role}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+      const userRole = providedRole || this.getCurrentUser()?.role;
+      if (userRole) {
+        document.cookie = `user_role=${userRole}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
       }
     }
   }

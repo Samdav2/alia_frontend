@@ -29,7 +29,7 @@ export const LecturerDashboard: React.FC = () => {
   const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
       await authService.logout();
-      router.push('/');
+      window.location.href = '/login';
     }
   };
 

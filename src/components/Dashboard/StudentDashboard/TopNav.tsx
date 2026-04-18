@@ -28,7 +28,7 @@ export const TopNav: React.FC = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
-      router.push('/login');
+      window.location.href = '/login';
       setIsLoggingOut(false);
     }
   };
@@ -92,8 +92,8 @@ export const TopNav: React.FC = () => {
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${isActive
-                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                   >
                     <span className="text-xl">{item.icon}</span>
@@ -142,8 +142,8 @@ export const TopNav: React.FC = () => {
                   key={item.id}
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold ${isActive
-                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                 >
                   <span className="text-xl">{item.icon}</span>
