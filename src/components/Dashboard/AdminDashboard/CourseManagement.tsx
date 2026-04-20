@@ -29,7 +29,7 @@ export const CourseManagement: React.FC = () => {
       const params: any = { page: 1, limit: 50 };
       if (filters.status !== 'all') params.status = filters.status;
       if (filters.department !== 'all') params.department = filters.department;
-      
+
       const data = await adminService.getAllCourses(params);
       setCourses(data.courses);
     } catch (err) {
@@ -226,7 +226,7 @@ export const CourseManagement: React.FC = () => {
                       </button>
                     </>
                   )}
-                  
+
                   {/* Status Change Buttons */}
                   {course.status === 'draft' && (
                     <button
@@ -244,7 +244,7 @@ export const CourseManagement: React.FC = () => {
                       📝 Draft
                     </button>
                   )}
-                  
+
                   {course.status === 'active' && (
                     <button
                       onClick={() => handleFeatureCourse(course.id, true)}
@@ -253,7 +253,7 @@ export const CourseManagement: React.FC = () => {
                       ⭐ Feature
                     </button>
                   )}
-                  <button 
+                  <button
                     onClick={() => setViewingCourseFiles(course.id)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
                   >

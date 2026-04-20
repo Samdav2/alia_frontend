@@ -17,6 +17,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
   const [error, setError] = useState<string | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState(false);
   const { showNotification } = useVisualNotification();
 
   useEffect(() => {
@@ -165,10 +166,18 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
             {/* Course Thumbnail */}
             <div className="w-full lg:w-[400px] flex-shrink-0">
               <div className="w-full aspect-video lg:aspect-square bg-linear-to-br from-blue-500 to-purple-600 rounded-[40px] overflow-hidden shadow-2xl flex items-center justify-center text-6xl ring-8 ring-white/50">
-                {course.thumbnail ? (
-                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
+                {course.thumbnail && !thumbnailError ? (
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    onError={() => setThumbnailError(true)}
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+                  />
                 ) : (
-                  <span>📚</span>
+                  <div className="flex flex-col items-center justify-center text-white/50 space-y-4">
+                    <span className="text-8xl">📚</span>
+                    <span className="text-sm font-black uppercase tracking-[0.2em]">{course.code}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -186,7 +195,7 @@ export const CourseOverview: React.FC<CourseOverviewProps> = ({ courseId }) => {
                 )}
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.1]">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-[1.1]">
                 {course.title}
               </h1>
 

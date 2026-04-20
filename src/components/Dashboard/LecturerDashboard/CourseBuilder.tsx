@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { lecturerService, CreateCourseData, CreateModuleData, CreateTopicData, FileUploadResponse } from '@/services/api/lecturerService';
 import { Course, Module, Topic, CourseDetails, courseService } from '@/services/api/courseService';
 import { useVisualNotification } from '@/components/Accessibility/VisualNotification';
@@ -32,6 +32,14 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const { showNotification } = useVisualNotification();
+
+  const fileContext = useMemo(() => {
+    if (!selectedCourse) return null;
+    return {
+      type: 'course' as const,
+      courseId: selectedCourse.id
+    };
+  }, [selectedCourse?.id]);
 
   const [courseForm, setCourseForm] = useState<CreateCourseData>({
     code: '',
@@ -483,30 +491,29 @@ export const CourseBuilder: React.FC<CourseBuilderProps> = ({ initialCourseId })
                 </div>
               </div>
 
-              {/* Enhanced File Upload Manager */}
-              <FileUploadManager
-                context={{
-                  type: 'course',
-                  courseId: selectedCourse.id
-                }}
-                showReadAloud={true} // Enable read-aloud for lecturers to preview content
-                onFileUpload={(file) => {
-                  console.log('File uploaded:', file);
-                  // You can add the file to topic resources if needed
-                  if (editorView === 'topic_form' && file) {
-                    const newResource = {
-                      type: file.type,
-                      url: file.url,
-                      title: file.original_filename
-                    };
-                    setTopicForm(prev => ({
-                      ...prev,
-                      resources: [...(prev.resources || []), newResource]
-                    }));
-                  }
-                }}
-                className="mb-6"
-              />
+              {fileContext && (
+                <div className="space-y-6">
+                  <FileUploadManager
+                    context={fileContext}
+                    showReadAloud={true}
+                    onFileUpload={(file) => {
+                      console.log('File uploaded:', file);
+                      if (editorView === 'topic_form' && file) {
+                        const newResource = {
+                          type: file.type,
+                          url: file.url,
+                          title: file.original_filename
+                        };
+                        setTopicForm(prev => ({
+                          ...prev,
+                          resources: [...(prev.resources || []), newResource]
+                        }));
+                      }
+                    }}
+                    className="mb-6"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Modules / Editor Workspace */}

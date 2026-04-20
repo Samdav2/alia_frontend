@@ -384,7 +384,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
 
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 border-b border-slate-100 pb-6 sm:pb-8">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-5xl font-black text-slate-900 tracking-tight">
               {topic.title} <span className="alia-gradient-text">Learning</span>
             </h1>
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-slate-500 font-bold tracking-wide text-sm sm:text-base">

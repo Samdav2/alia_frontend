@@ -199,13 +199,12 @@ class LecturerService {
 
   // Update course
   async updateCourse(courseId: string, data: Partial<CreateCourseData>): Promise<Course> {
-    const response = await apiClient.put(`/api/courses/${courseId}`, data);
+    const response = await apiClient.put(`/api/lecturer/courses/${courseId}`, data);
     return response.data.data;
   }
 
-  // Delete course
   async deleteCourse(courseId: string): Promise<void> {
-    await apiClient.delete(`/api/courses/${courseId}`);
+    await apiClient.delete(`/api/lecturer/courses/${courseId}`);
   }
 
   // Get my courses
