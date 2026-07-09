@@ -198,33 +198,6 @@ export const AutonomousAgentPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Debug: Reset Progress */}
-      {!isAutoPilotActive && (
-        <div className="space-y-2">
-          <button
-            onClick={resetProgress}
-            className="w-full px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            Reset All Progress (Debug)
-          </button>
-
-          <div className="grid grid-cols-2 gap-2">
-            {['1', '2', '3', '4'].map((courseId) => (
-              <button
-                key={courseId}
-                onClick={() => {
-                  if (confirm(`Reset Course ${courseId} progress?`)) {
-                    autonomousAgentService.resetCourseProgress(courseId);
-                  }
-                }}
-                className="px-2 py-1 text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors border border-orange-200 rounded"
-              >
-                Reset Course {courseId}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

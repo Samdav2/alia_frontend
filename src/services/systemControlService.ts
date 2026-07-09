@@ -5,6 +5,7 @@ import { enrollmentService } from './enrollmentService';
 import { autonomousAgentService } from './autonomousAgentService';
 import { textToSpeechService } from './textToSpeechService';
 import { courseService } from './api/courseService';
+import { enrollmentAPIService } from './api/enrollmentService';
 
 export interface SystemAction {
   type: 'navigate' | 'enroll' | 'start_course' | 'take_quiz' | 'start_autonomous' | 'change_settings' | 'show_progress';
@@ -37,6 +38,7 @@ class SystemControlService {
     // Only initialize on client-side
     if (typeof window !== 'undefined') {
       this.userContext = this.loadUserContext();
+      this.syncEnrollmentsWithBackend();
     } else {
       // Provide default context for server-side
       this.userContext = {
@@ -127,6 +129,31 @@ class SystemControlService {
   updateContext() {
     if (typeof window !== 'undefined') {
       this.userContext = this.loadUserContext();
+      this.syncEnrollmentsWithBackend();
+    }
+  }
+
+  // Synchronize local enrollments with backend database
+  async syncEnrollmentsWithBackend() {
+    if (typeof window === 'undefined') return;
+    try {
+      const enrollments = await enrollmentAPIService.getUserEnrollments();
+      if (enrollments && Array.isArray(enrollments)) {
+        const enrolledCourseIds = enrollments.filter(e => e.course_id).map(e => e.course_id);
+        
+        // Update local memory and localstorage
+        enrolledCourseIds.forEach(id => {
+          enrollmentService.enrollInCourse(id);
+        });
+
+        localStorage.setItem('enrollments', JSON.stringify(enrolledCourseIds));
+        
+        // Re-load context sync to apply newly loaded enrolledCourseIds
+        this.userContext.enrolledCourses = enrolledCourseIds;
+        console.log('✏️ Context synchronized with backend enrollments:', enrolledCourseIds);
+      }
+    } catch (e) {
+      console.error('Failed to sync context with backend enrollments:', e);
     }
   }
 
@@ -342,8 +369,19 @@ Remember: You have FULL CONTROL of the system. Don't just talk - ACT!`;
               }
             }
 
+            // Enroll in the backend API
+            try {
+              await enrollmentAPIService.enrollInCourse(courseId);
+              console.log('✅ Registered enrollment in backend for:', courseId);
+            } catch (apiErr) {
+              console.error('Failed backend enrollment, using local fallback only:', apiErr);
+            }
+
             const success = enrollmentService.enrollInCourse(courseId);
             if (success) {
+              // Sync context immediately
+              this.syncEnrollmentsWithBackend();
+
               // Try to get the first topic ID for proper navigation
               try {
                 const firstTopicId = await this.getFirstTopicId(courseId);

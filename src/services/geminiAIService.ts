@@ -1,9 +1,9 @@
-// Grok AI Service for Agentic Voice Chat
-// Provides intelligent, proactive AI assistance with course context
+// Gemini AI Service for Agentic Voice Chat
+// Provides client-side Gemini API interaction with dynamic course context and teacher persona
 
 import { courseService, Course } from '@/services/api/courseService';
 
-interface GrokAIConfig {
+interface GeminiAIConfig {
   apiKey: string;
   baseUrl: string;
   model: string;
@@ -25,6 +25,7 @@ interface AgenticResponse {
 interface AgenticAction {
   type: 'navigate' | 'start_course' | 'take_quiz' | 'review_topic' | 'set_reminder' | 'enroll';
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
 }
 
@@ -46,21 +47,21 @@ interface UserContext {
   };
 }
 
-class GrokAIService {
-  private config: GrokAIConfig;
+class GeminiAIService {
+  private config: GeminiAIConfig;
   private conversationHistory: ChatMessage[] = [];
   private userContext: UserContext | null = null;
   private courses: Course[] = [];
 
   constructor() {
     this.config = {
-      apiKey: process.env.NEXT_PUBLIC_GROK_API_KEY || '',
-      baseUrl: 'https://api.groq.com/openai/v1',
-      model: 'llama-3.3-70b-versatile' // Updated to Groq model name
+      apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+      model: 'gemini-1.5-flash'
     };
   }
 
-  // Set Grok API key
+  // Set Gemini API key
   setApiKey(apiKey: string) {
     this.config.apiKey = apiKey;
   }
@@ -77,10 +78,10 @@ class GrokAIService {
         const response = await courseService.getAllCourses();
         if (response && response.courses) {
           this.courses = response.courses;
-          console.log('📚 Grok AI Service loaded courses dynamically:', this.courses.map(c => c.title));
+          console.log('📚 Gemini AI Service loaded courses dynamically:', this.courses.map(c => c.title));
         }
       } catch (e) {
-        console.error('❌ Error fetching courses in grokAIService:', e);
+        console.error('❌ Error fetching courses in geminiAIService:', e);
       }
     }
   }
@@ -120,7 +121,7 @@ ENROLLMENT STATUS:
 4. **Dynamic Explanation & Real-World Scenarios**: If asked about any subject (e.g., general studies, Educational Psychology, Curriculum Development), dynamically fetch the topics, load them into context, and explain them thoroughly using rich scenarios, real-world analogies, and stories. Do not perform page navigation.
 5. **Interactive Check-ins**: Ask checking questions continuously. After explaining a concept, ask: "Does that make sense, [Name]?" or "Here is a quick question to test our understanding: ...". Keep the dialogue highly interactive.
 
-${contextInfo}
+\${contextInfo}
 
 💪 YOUR AGENTIC POWERS:
 - **Enrollment**: You can enroll users in courses. Proactively mention course names and offer to enroll them.
@@ -138,7 +139,7 @@ ${contextInfo}
 Remember: You are the student's companion and guide. Be warm, standard in English, and highly interactive!`;
   }
 
-  // Generate agentic AI response using Grok
+  // Generate agentic AI response using Gemini
   async generateAgenticResponse(userInput: string): Promise<AgenticResponse> {
     try {
       await this.fetchCoursesIfNeeded();
@@ -179,18 +180,18 @@ ${modulesText}
         content: userInput
       });
 
-      // Prepare enhanced messages for Grok API with better context
       const enhancedUserInput = this.enhanceUserInput(userInput);
 
-      const messages: ChatMessage[] = [
-        {
-          role: 'system',
-          content: this.generateSystemPrompt(courseDetailsText)
-        },
-        ...this.conversationHistory.slice(-6), // Keep last 6 messages for context
-        {
-          role: 'user',
-          content: `${enhancedUserInput}
+      // Construct Gemini request body
+      // Gemini expects systemInstruction in the config, and contents in the request body
+      const contents = this.conversationHistory.slice(-6).map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+      // Append enhanced input for the current message
+      if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+        contents[contents.length - 1].parts[0].text = `${enhancedUserInput}
 
 IMPORTANT: Provide a response that:
 1. Speaks in clean, clear standard English (NO Pidgin English).
@@ -200,130 +201,101 @@ IMPORTANT: Provide a response that:
 5. Keeps a calm, reassuring, and highly supportive tone for accessibility.
 
 Current urgent needs analysis:
-${this.analyzeUserNeeds(userInput)}`
-        }
-      ];
+${this.analyzeUserNeeds(userInput)}`;
+      }
 
-      // Call Grok API with enhanced parameters
-      const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+      const requestBody = {
+        contents: contents,
+        systemInstruction: {
+          parts: [{ text: this.generateSystemPrompt(courseDetailsText) }]
+        },
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 1200
+        }
+      };
+
+      console.log('🤖 Sending request to Gemini API...');
+      const response = await fetch(`${this.config.baseUrl}/${this.config.model}:generateContent?key=${this.config.apiKey}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages: messages,
-          temperature: 0.8, // Higher creativity for more natural responses
-          max_tokens: 1200, // More tokens for detailed responses
-          top_p: 0.9,
-          frequency_penalty: 0.1,
-          presence_penalty: 0.1,
-          stream: false
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Grok API Error Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
-        throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+        console.error('❌ Gemini API Error:', response.status, errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Grok API Response received:', {
-        model: data.model,
-        choices: data.choices?.length,
-        hasContent: !!data.choices?.[0]?.message?.content
-      });
-
-      const aiResponse = data.choices[0]?.message?.content || '';
+      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       if (!aiResponse.trim()) {
-        console.error('❌ Empty response from Grok API');
-        throw new Error('Empty response from Grok API');
+        console.error('❌ Empty response from Gemini API');
+        throw new Error('Empty response from Gemini API');
       }
 
-      console.log('✅ Grok AI generated response:', aiResponse.substring(0, 150) + '...');
+      console.log('✅ Gemini AI response received:', aiResponse.substring(0, 150) + '...');
 
-      // Add AI response to conversation history
+      // Add to conversation history
       this.conversationHistory.push({
         role: 'assistant',
         content: aiResponse
       });
 
-      // Parse response and extract agentic elements with enhanced intelligence
-      const agenticResponse = this.parseAgenticResponse(aiResponse, userInput);
-
-      return agenticResponse;
+      return this.parseAgenticResponse(aiResponse, userInput);
 
     } catch (error) {
-      console.error('Grok AI Service Error:', error);
-
-      // Enhanced fallback response
+      console.error('❌ Gemini AI Service Error:', error);
       return this.generateEnhancedFallbackResponse(userInput);
     }
   }
 
-  // Enhance user input with context
+  // Helper methods replicated from GrokAI
   private enhanceUserInput(userInput: string): string {
     const context = this.userContext;
     let enhancement = userInput;
 
-    // Add context clues to help AI understand better
     if (context) {
       if (context.completedTopics.length === 0) {
         enhancement += " [Context: User has not completed any topics yet - needs guidance on getting started]";
       }
-
       if (!context.currentCourse) {
         enhancement += " [Context: User is not enrolled in any course - may need enrollment assistance]";
       }
-
       if (context.performance?.averageScore && context.performance.averageScore < 70) {
         enhancement += " [Context: User's performance could be improved - may need additional support]";
       }
     }
-
     return enhancement;
   }
 
-  // Analyze user needs for better responses
   private analyzeUserNeeds(userInput: string): string {
     const lowerInput = userInput.toLowerCase();
     const context = this.userContext;
     const needs: string[] = [];
 
-    // Learning status analysis
     if (!context?.currentCourse) {
       needs.push("🚨 URGENT: User needs course enrollment to start learning");
     }
-
     if (context?.completedTopics.length === 0) {
       needs.push("📚 User needs guidance on first steps in learning journey");
     }
-
-    // Intent analysis
     if (lowerInput.includes('help') || lowerInput.includes('stuck') || lowerInput.includes('confused')) {
       needs.push("🆘 User needs immediate assistance and clear direction");
     }
-
     if (lowerInput.includes('course') || lowerInput.includes('learn') || lowerInput.includes('study')) {
       needs.push("📖 User wants to engage with learning content");
     }
-
     if (lowerInput.includes('progress') || lowerInput.includes('performance') || lowerInput.includes('how am i')) {
       needs.push("📊 User wants performance feedback and improvement suggestions");
     }
-
     if (lowerInput.includes('quiz') || lowerInput.includes('test') || lowerInput.includes('assessment')) {
       needs.push("🧪 User wants to test their knowledge");
     }
-
-    // Emotional state analysis
     if (lowerInput.includes('frustrated') || lowerInput.includes('difficult') || lowerInput.includes('hard')) {
       needs.push("💪 User needs encouragement and simplified approach");
     }
@@ -331,15 +303,9 @@ ${this.analyzeUserNeeds(userInput)}`
     return needs.length > 0 ? needs.join('\n') : "✅ User seems ready for standard learning assistance";
   }
 
-  // Parse AI response to extract agentic elements
   private parseAgenticResponse(aiResponse: string, userInput: string): AgenticResponse {
-    // Extract suggestions (look for numbered lists or bullet points)
     const suggestions = this.extractSuggestions(aiResponse);
-
-    // Generate actions based on response content
     const actions = this.generateActions(aiResponse, userInput);
-
-    // Extract next steps
     const nextSteps = this.extractNextSteps(aiResponse);
 
     return {
@@ -347,27 +313,22 @@ ${this.analyzeUserNeeds(userInput)}`
       suggestions: suggestions,
       actions: actions,
       nextSteps: nextSteps,
-      confidence: 0.9
+      confidence: 0.95
     };
   }
 
-  // Extract suggestions from AI response
   private extractSuggestions(response: string): string[] {
     const suggestions: string[] = [];
-
-    // Look for numbered suggestions
     const numberedMatches = response.match(/\d+\.\s*([^.\n]+)/g);
     if (numberedMatches) {
       suggestions.push(...numberedMatches.map(match => match.replace(/\d+\.\s*/, '').trim()));
     }
 
-    // Look for bullet points
     const bulletMatches = response.match(/[•\-\*]\s*([^.\n]+)/g);
     if (bulletMatches) {
       suggestions.push(...bulletMatches.map(match => match.replace(/[•\-\*]\s*/, '').trim()));
     }
 
-    // If no structured suggestions found, generate based on content
     if (suggestions.length === 0) {
       if (response.toLowerCase().includes('course')) {
         suggestions.push('Start a new course');
@@ -379,17 +340,15 @@ ${this.analyzeUserNeeds(userInput)}`
         suggestions.push('Review previous topics');
       }
     }
-
-    return suggestions.slice(0, 3); // Limit to 3 suggestions
+    return suggestions.slice(0, 3);
   }
 
-  // Generate actionable items based on response
   private generateActions(response: string, userInput: string): AgenticAction[] {
     const actions: AgenticAction[] = [];
     const lowerResponse = response.toLowerCase();
     const lowerInput = userInput.toLowerCase();
 
-    // Course-related actions
+    // Check course-related start or enrollment requests
     if (lowerResponse.includes('start') && (lowerResponse.includes('course') || lowerResponse.includes('lesson'))) {
       let matchedCourseId = '1';
       if (this.courses.length > 0) {
@@ -426,7 +385,6 @@ ${this.analyzeUserNeeds(userInput)}`
       });
     }
 
-    // Quiz actions
     if (lowerResponse.includes('quiz') || lowerResponse.includes('test')) {
       actions.push({
         type: 'take_quiz',
@@ -435,7 +393,6 @@ ${this.analyzeUserNeeds(userInput)}`
       });
     }
 
-    // Review actions
     if (lowerResponse.includes('review') || lowerResponse.includes('revisit')) {
       actions.push({
         type: 'review_topic',
@@ -444,7 +401,6 @@ ${this.analyzeUserNeeds(userInput)}`
       });
     }
 
-    // Navigation actions
     if (lowerResponse.includes('go to') || lowerResponse.includes('navigate')) {
       actions.push({
         type: 'navigate',
@@ -456,192 +412,59 @@ ${this.analyzeUserNeeds(userInput)}`
     return actions;
   }
 
-  // Extract next steps from response
   private extractNextSteps(response: string): string[] {
     const nextSteps: string[] = [];
-
-    // Look for "next" or "should" statements
     const nextMatches = response.match(/(?:next|should|try|consider)\s+([^.!?]+)/gi);
     if (nextMatches) {
       nextSteps.push(...nextMatches.map(match => match.trim()).slice(0, 2));
     }
-
-    // Default next steps if none found
     if (nextSteps.length === 0) {
       nextSteps.push('Continue with your current learning path');
       nextSteps.push('Ask me any questions about your studies');
     }
-
     return nextSteps;
   }
 
-  // Extract topic from user input
   private extractTopicFromInput(input: string): string {
     const topics = [
       'multi-agent systems', 'machine learning', 'educational psychology',
       'curriculum development', 'software engineering', 'molecular biology'
     ];
-
     const lowerInput = input.toLowerCase();
     const foundTopic = topics.find(topic => lowerInput.includes(topic));
-
     return foundTopic || 'general';
   }
 
-  // Enhanced fallback response when Grok API is unavailable
   private generateEnhancedFallbackResponse(userInput: string): AgenticResponse {
     const lowerInput = userInput.toLowerCase();
     const context = this.userContext;
 
-    let response = "";
+    let response = "I hear you're feeling stuck, and that's completely normal! Let me help you get back on track right now. ";
     const suggestions: string[] = [];
     const actions: AgenticAction[] = [];
     const nextSteps: string[] = [];
 
-    // Analyze user intent with enhanced intelligence
     if (lowerInput.includes('help') || lowerInput.includes('stuck') || lowerInput.includes('confused') || lowerInput.includes('lost')) {
-      response = `I hear you're feeling stuck, and that's completely normal! Every successful student goes through this. Let me help you get back on track right now. `;
-
       if (!context?.currentCourse) {
-        response += `I can see you haven't enrolled in any courses yet - that's exactly why things feel unclear! I'm going to fix this immediately by enrolling you in our Multi-Agent Systems course. It's perfect for building strong foundations and will give you clear direction.`;
-
-        suggestions.push('Enroll in Multi-Agent Systems course right now');
-        suggestions.push('Start with the first topic immediately after enrollment');
-        suggestions.push('Activate autonomous mode for guided learning');
-
+        response += `I can see you haven't enrolled in any courses yet - that's exactly why things feel unclear! I'm going to help you by enrolling you in our Multi-Agent Systems course. It's perfect for building strong foundations.`;
+        suggestions.push('Enroll in Multi-Agent Systems course');
+        suggestions.push('Start the first topic immediately');
         actions.push({
-          type: 'start_course',
-          description: 'Enroll and start Multi-Agent Systems course',
-          data: { courseId: '1', autoStart: true }
+          type: 'enroll',
+          description: 'Enroll in course',
+          data: { courseId: '1' }
         });
       } else {
         response += `You're enrolled in ${context.currentCourse} but seem overwhelmed. Let me activate autonomous mode to guide you step-by-step through your learning journey.`;
-
-        suggestions.push('Continue with your current course using guided mode');
-        suggestions.push('Review topics you found challenging');
-        suggestions.push('Take a quick assessment to identify gaps');
+        suggestions.push('Continue with current course');
+        suggestions.push('Review challenging topics');
       }
-
       nextSteps.push('I\'ll guide you through each step personally');
-      nextSteps.push('We\'ll build your confidence with small wins');
-    }
-
-    else if (lowerInput.includes('course') || lowerInput.includes('learn') || lowerInput.includes('study') || lowerInput.includes('education')) {
-      if (!context?.currentCourse) {
-        response = `Perfect timing! You're ready to start learning, and I have exactly what you need. I'm going to enroll you in our most popular course - Multi-Agent Systems - right now. This course will teach you how AI systems work together, which is incredibly valuable in today's tech world. After enrollment, I'll take you directly to the first lesson.`;
-
-        suggestions.push('Start Multi-Agent Systems course immediately');
-        suggestions.push('Explore other available courses');
-        suggestions.push('Set up your learning schedule');
-
-        actions.push({
-          type: 'start_course',
-          description: 'Enroll in Multi-Agent Systems',
-          data: { courseId: '1' }
-        });
-      } else {
-        response = `Excellent! You're already enrolled in ${context.currentCourse}. Let's continue building on your progress. You've completed ${context.completedTopics.length} topics so far - that's fantastic progress! Ready to tackle the next challenge?`;
-
-        suggestions.push('Continue with your current course');
-        suggestions.push('Review and reinforce previous topics');
-        suggestions.push('Take a practice quiz to test your knowledge');
-      }
-
-      nextSteps.push('I\'ll track your progress and celebrate your wins');
-      nextSteps.push('We\'ll adjust the pace based on your performance');
-    }
-
-    else if (lowerInput.includes('progress') || lowerInput.includes('performance') || lowerInput.includes('how am i') || lowerInput.includes('doing')) {
-      const completedTopics = context?.completedTopics.length || 0;
-      const timeSpent = Math.floor((context?.performance?.timeSpent || 0) / 60);
-      const averageScore = context?.performance?.averageScore || 0;
-
-      response = `Great question! Let me give you the full picture of your learning journey. You've completed ${completedTopics} topics and spent ${timeSpent} minutes actively learning. `;
-
-      if (completedTopics === 0) {
-        response += `You're just getting started, which means you have unlimited potential ahead! I recommend we begin with a structured approach - let me enroll you in a course and activate guided learning mode.`;
-
-        suggestions.push('Start your first course to begin tracking progress');
-        suggestions.push('Set learning goals and milestones');
-        suggestions.push('Establish a daily study routine');
-      } else {
-        response += `Your average score is ${averageScore}%. `;
-
-        if (averageScore >= 80) {
-          response += `That's excellent performance! You're clearly mastering the material. Ready for more advanced challenges?`;
-          suggestions.push('Move to advanced topics in your current course');
-          suggestions.push('Enroll in a second course to expand your knowledge');
-          suggestions.push('Help other students as a peer mentor');
-        } else if (averageScore >= 60) {
-          response += `You're making solid progress! Let's focus on strengthening your understanding with some targeted practice.`;
-          suggestions.push('Review challenging topics with additional practice');
-          suggestions.push('Take practice quizzes to reinforce learning');
-          suggestions.push('Adjust study methods for better retention');
-        } else {
-          response += `I can see you're working hard, and that effort will pay off! Let's adjust our approach to help you succeed.`;
-          suggestions.push('Switch to guided autonomous mode for better support');
-          suggestions.push('Break down complex topics into smaller chunks');
-          suggestions.push('Schedule regular review sessions');
-        }
-      }
-
-      nextSteps.push('I\'ll provide detailed analytics and insights');
-      nextSteps.push('We\'ll create a personalized improvement plan');
-    }
-
-    else if (lowerInput.includes('quiz') || lowerInput.includes('test') || lowerInput.includes('assessment') || lowerInput.includes('exam')) {
-      response = `Excellent idea! Testing yourself is one of the most effective ways to learn and retain information. `;
-
-      if (context?.completedTopics.length && context.completedTopics.length > 0) {
-        response += `Based on your progress in ${context.currentCourse}, I'll create a personalized quiz covering the topics you've studied. This will help identify areas where you're strong and areas that need more attention.`;
-
-        suggestions.push('Take a comprehensive quiz on completed topics');
-        suggestions.push('Focus on specific challenging areas');
-        suggestions.push('Practice with timed assessments');
-      } else {
-        response += `Since you're just starting out, let me first get you enrolled in a course, then we can create targeted quizzes based on what you're learning.`;
-
-        suggestions.push('Start a course first, then take topic-specific quizzes');
-        suggestions.push('Begin with diagnostic assessment to find your level');
-        suggestions.push('Practice with sample questions');
-      }
-
-      actions.push({
-        type: 'take_quiz',
-        description: 'Generate personalized quiz',
-        data: { topics: context?.completedTopics || [] }
-      });
-
-      nextSteps.push('I\'ll analyze your quiz results for insights');
-      nextSteps.push('We\'ll create targeted study plans based on performance');
-    }
-
-    else {
-      // Default intelligent response
-      response = `I understand you want to ${userInput}. As your AI learning companion, I'm here to make your educational journey smooth and successful. `;
-
-      if (!context?.currentCourse) {
-        response += `I notice you haven't enrolled in any courses yet - let's fix that right now! I'll get you started with our most popular course.`;
-
-        suggestions.push('Enroll in Multi-Agent Systems course');
-        suggestions.push('Explore all available courses');
-        suggestions.push('Set up your learning preferences');
-
-        actions.push({
-          type: 'start_course',
-          description: 'Start your learning journey',
-          data: { courseId: '1' }
-        });
-      } else {
-        response += `You're doing great with ${context.currentCourse}! Let's keep building on your momentum.`;
-
-        suggestions.push('Continue with your current learning path');
-        suggestions.push('Explore additional learning resources');
-        suggestions.push('Connect with other learners');
-      }
-
-      nextSteps.push('Tell me more about what you\'d like to achieve');
-      nextSteps.push('I\'ll create a personalized action plan for you');
+    } else {
+      response = `I understand you want to ${userInput}. Let's work together as a team! Tell me more about what you'd like to explore next.`;
+      suggestions.push('Browse available courses');
+      suggestions.push('Check learning progress');
+      nextSteps.push('Ask me anything about your courses');
     }
 
     return {
@@ -649,33 +472,21 @@ ${this.analyzeUserNeeds(userInput)}`
       suggestions: suggestions.slice(0, 3),
       actions,
       nextSteps: nextSteps.slice(0, 2),
-      confidence: 0.85
+      confidence: 0.8
     };
   }
 
-  // Clear conversation history
   clearHistory() {
     this.conversationHistory = [];
   }
 
-  // Get conversation history
   getHistory(): ChatMessage[] {
     return [...this.conversationHistory];
   }
 
-  // Check if Grok API is configured
   isConfigured(): boolean {
-    const isConfigured = !!this.config.apiKey && this.config.apiKey.length > 10;
-    console.log('🔍 Grok AI Configuration Check:', {
-      hasApiKey: !!this.config.apiKey,
-      apiKeyLength: this.config.apiKey?.length || 0,
-      apiKeyPreview: this.config.apiKey ? `${this.config.apiKey.substring(0, 10)}...` : 'none',
-      baseUrl: this.config.baseUrl,
-      model: this.config.model,
-      isConfigured
-    });
-    return isConfigured;
+    return !!this.config.apiKey && this.config.apiKey.length > 10;
   }
 }
 
-export const grokAIService = new GrokAIService();
+export const geminiAIService = new GeminiAIService();

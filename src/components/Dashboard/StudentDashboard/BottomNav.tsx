@@ -32,7 +32,7 @@ export const BottomNav: React.FC = () => {
     };
 
     return (
-        <nav className="hidden fixed bottom-6 left-2 right-2 z-50">
+        <nav className="lg:hidden fixed bottom-6 left-2 right-2 z-50">
             <div className="glass-nav rounded-3xl p-1.5 flex justify-around items-center shadow-2xl border-white/40 ring-1 ring-slate-900/5 overflow-x-auto">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;

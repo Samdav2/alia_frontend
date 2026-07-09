@@ -5,6 +5,20 @@ import { lecturerService, CreateQuizData, QuizQuestion } from '@/services/api/le
 import { Course } from '@/services/api/courseService';
 import { useVisualNotification } from '@/components/Accessibility/VisualNotification';
 
+const createEmptyQuestion = (): QuizQuestion => ({
+  id: `q${Date.now()}`,
+  question: '',
+  type: 'multiple_choice',
+  options: [
+    { id: 'a', text: '' },
+    { id: 'b', text: '' },
+    { id: 'c', text: '' },
+    { id: 'd', text: '' }
+  ],
+  correct_answer: '',
+  points: 1
+});
+
 interface Quiz {
   id: string;
   title: string;
@@ -36,13 +50,7 @@ export const QuizManagement: React.FC = () => {
     questions: []
   });
 
-  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion>({
-    question: '',
-    type: 'multiple_choice',
-    options: ['', '', '', ''],
-    correct_answer: '',
-    points: 1
-  });
+  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion>(createEmptyQuestion());
 
   useEffect(() => {
     if (selectedCourse) {
@@ -118,7 +126,7 @@ export const QuizManagement: React.FC = () => {
       return;
     }
 
-    if (currentQuestion.type === 'multiple_choice' && currentQuestion.options?.some(opt => !opt.trim())) {
+    if ((currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'true_false') && currentQuestion.options?.some(opt => !opt.text.trim())) {
       showNotification('Please fill in all answer options', 'error');
       return;
     }
@@ -138,13 +146,7 @@ export const QuizManagement: React.FC = () => {
     });
 
     // Reset current question
-    setCurrentQuestion({
-      question: '',
-      type: 'multiple_choice',
-      options: ['', '', '', ''],
-      correct_answer: '',
-      points: 1
-    });
+    setCurrentQuestion(createEmptyQuestion());
   };
 
   const removeQuestion = (index: number) => {
@@ -296,7 +298,7 @@ export const QuizManagement: React.FC = () => {
       {/* Create/Edit Quiz Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white text-slate-900 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-black text-slate-900 mb-6">
               {editingQuiz ? 'Edit Quiz' : 'Create New Quiz'}
             </h3>
@@ -310,7 +312,7 @@ export const QuizManagement: React.FC = () => {
                     type="text"
                     value={quizForm.title}
                     onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
@@ -319,7 +321,7 @@ export const QuizManagement: React.FC = () => {
                   <select
                     value={quizForm.topic_id}
                     onChange={(e) => setQuizForm({ ...quizForm, topic_id: e.target.value })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
                     <option value="">Select Topic</option>
@@ -334,7 +336,7 @@ export const QuizManagement: React.FC = () => {
                   value={quizForm.description}
                   onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -345,7 +347,7 @@ export const QuizManagement: React.FC = () => {
                     type="number"
                     value={quizForm.time_limit}
                     onChange={(e) => setQuizForm({ ...quizForm, time_limit: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="1"
                     required
                   />
@@ -356,7 +358,7 @@ export const QuizManagement: React.FC = () => {
                     type="number"
                     value={quizForm.passing_score}
                     onChange={(e) => setQuizForm({ ...quizForm, passing_score: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     max="100"
                     required
@@ -413,7 +415,19 @@ export const QuizManagement: React.FC = () => {
                         <label className="block text-sm font-bold text-slate-700 mb-2">Question Type</label>
                         <select
                           value={currentQuestion.type}
-                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, type: e.target.value as any })}
+                            onChange={(e) => {
+                              const newType = e.target.value as QuizQuestion['type'];
+                              setCurrentQuestion({
+                                ...currentQuestion,
+                                type: newType,
+                                options: newType === 'short_answer'
+                                  ? undefined
+                                  : newType === 'true_false'
+                                    ? [{ id: 'true', text: 'True' }, { id: 'false', text: 'False' }]
+                                    : [{ id: 'a', text: '' }, { id: 'b', text: '' }, { id: 'c', text: '' }, { id: 'd', text: '' }],
+                                correct_answer: ''
+                              });
+                            }}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value="multiple_choice">Multiple Choice</option>
@@ -434,38 +448,49 @@ export const QuizManagement: React.FC = () => {
                     </div>
 
                     {/* Multiple Choice Options */}
-                    {currentQuestion.type === 'multiple_choice' && (
+                    {currentQuestion.type !== 'short_answer' && currentQuestion.options && (
                       <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">Answer Options</label>
                         <div className="space-y-2">
                           {currentQuestion.options?.map((option, index) => (
-                            <input
-                              key={index}
-                              type="text"
-                              value={option}
-                              onChange={(e) => {
-                                const newOptions = [...(currentQuestion.options || [])];
-                                newOptions[index] = e.target.value;
-                                setCurrentQuestion({ ...currentQuestion, options: newOptions });
-                              }}
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={`Option ${index + 1}`}
-                            />
+                            <div key={option.id} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="quiz-correct-answer"
+                                checked={currentQuestion.correct_answer === option.id}
+                                onChange={() => setCurrentQuestion({ ...currentQuestion, correct_answer: option.id })}
+                                className="w-4 h-4 text-blue-600"
+                              />
+                              <input
+                                type="text"
+                                value={option.text}
+                                onChange={(e) => {
+                                  const newOptions = [...(currentQuestion.options || [])];
+                                  newOptions[index] = { ...newOptions[index], text: e.target.value };
+                                  setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                }}
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={`Option ${index + 1}`}
+                                disabled={currentQuestion.type === 'true_false'}
+                              />
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Correct Answer</label>
-                      <input
-                        type="text"
-                        value={currentQuestion.correct_answer}
-                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter the correct answer"
-                      />
-                    </div>
+                    {currentQuestion.type === 'short_answer' && (
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Correct Answer</label>
+                        <input
+                          type="text"
+                          value={currentQuestion.correct_answer}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter the correct answer"
+                        />
+                      </div>
+                    )}
 
                     <button
                       type="button"

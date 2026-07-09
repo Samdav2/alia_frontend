@@ -73,7 +73,8 @@ const TRANSLATIONS: Record<VoiceLanguage, Record<string, string>> = {
 };
 
 // How long after a user gesture speak() is considered "safe" by Chrome.
-const GESTURE_WINDOW_MS = 5000;
+// Extended to 60s for live voice chat sessions where user interaction is continuous.
+const GESTURE_WINDOW_MS = 60000;
 
 class TextToSpeechService {
   private synth: SpeechSynthesis | null = null;
@@ -82,7 +83,7 @@ class TextToSpeechService {
   private settings: VoiceSettings = {
     language: 'en-US',
     gender: 'female',
-    rate: 1.0,
+    rate: 0.92,  // Slightly slower for calm, clear delivery (accessibility)
     pitch: 1.0,
     volume: 1.0,
   };
@@ -159,16 +160,35 @@ class TextToSpeechService {
 
   private findVoice(language: VoiceLanguage, gender: VoiceGender): SpeechSynthesisVoice | null {
     const voices = this.getAvailableVoices();
-    // Nigerian languages fall back to English voices
-    const langCode =
-      language === 'ig-NG' || language === 'ha-NG' || language === 'yo-NG'
-        ? 'en'
-        : language.split('-')[0];
-
+    
+    // For Nigerian students: prefer en-NG > en-GB > en-US voices
+    // British English accent is more familiar and easier to understand for Nigerian students.
+    const isNigerian = language === 'ig-NG' || language === 'ha-NG' || language === 'yo-NG' || language === 'en-US';
+    
+    if (isNigerian) {
+      // 1. Try Nigerian English voice
+      const ngVoice = voices.find(v => v.lang === 'en-NG' && v.name.toLowerCase().includes(gender));
+      if (ngVoice) return ngVoice;
+      const ngAny = voices.find(v => v.lang === 'en-NG');
+      if (ngAny) return ngAny;
+      
+      // 2. Try British English (Google UK English Female is excellent for Nigerian context)
+      const gbGender = voices.find(v => v.lang.startsWith('en-GB') && v.name.toLowerCase().includes(gender));
+      if (gbGender) return gbGender;
+      const gbAny = voices.find(v => v.lang.startsWith('en-GB'));
+      if (gbAny) return gbAny;
+      
+      // 3. Try Google UK or any UK-sounding voice by name
+      const googleUK = voices.find(v => v.name.toLowerCase().includes('uk english') || v.name.toLowerCase().includes('british'));
+      if (googleUK) return googleUK;
+    }
+    
+    // General fallback
+    const langCode = language.split('-')[0];
     return (
-      voices.find((v) => v.lang.startsWith(langCode) && v.name.toLowerCase().includes(gender)) ||
-      voices.find((v) => v.lang.startsWith(langCode)) ||
-      voices.find((v) => v.default) ||
+      voices.find(v => v.lang.startsWith(langCode) && v.name.toLowerCase().includes(gender)) ||
+      voices.find(v => v.lang.startsWith(langCode)) ||
+      voices.find(v => v.default) ||
       voices[0] ||
       null
     );
@@ -261,7 +281,7 @@ class TextToSpeechService {
       const voice = this.findVoice(this.settings.language, this.settings.gender);
       if (voice) utterance.voice = voice;
 
-      utterance.lang   = this.settings.language === 'en-US' ? 'en-US' : 'en-NG';
+      utterance.lang   = 'en-NG'; // Default to Nigerian English for all speech
       utterance.rate   = options.rate   ?? this.settings.rate;
       utterance.pitch  = options.pitch  ?? this.settings.pitch;
       utterance.volume = options.volume ?? this.settings.volume;
@@ -389,6 +409,17 @@ class TextToSpeechService {
    */
   unlock() {
     // intentional no-op
+  }
+
+  /**
+   * Manually register a gesture timestamp.
+   * Called by voiceChatService when the user speaks — voice input IS a user
+   * interaction, so subsequent AI speech within the same conversational turn
+   * should always play immediately rather than being queued.
+   */
+  registerGesture() {
+    this.lastGestureTime = Date.now();
+    this.flushQueue();
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────

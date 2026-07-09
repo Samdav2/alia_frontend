@@ -53,7 +53,7 @@ export default function EducationalGamingPage() {
   };
 
   return (
-    <div className="min-h-screen soft-gradient-bg pt-6 sm:pt-10 px-4 sm:px-6 lg:px-10 pb-8">
+    <div className="min-h-screen soft-gradient-bg pt-6 sm:pt-10 px-4 sm:px-6 lg:px-10 pb-24 lg:pb-12">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="glass-card rounded-3xl sm:rounded-4xl p-6 sm:p-8 border border-slate-200">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">

@@ -3,9 +3,11 @@
 
 import { textToSpeechService } from './textToSpeechService';
 import { grokAIService } from './grokAIService';
+import { geminiAIService } from './geminiAIService';
 import { systemControlService } from './systemControlService';
 import { enrollmentService } from './enrollmentService';
 import { courseService } from './api/courseService';
+import { authService } from './api/authService';
 
 export interface VoiceChatSession {
   id: string;
@@ -56,9 +58,9 @@ class VoiceChatService {
 
       if (SpeechRecognition) {
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false; // Changed to false to prevent picking up own speech
+        this.recognition.continuous = true; // Allow user to speak full sentences without interruption
         this.recognition.interimResults = true;
-        this.recognition.lang = 'en-US';
+        this.recognition.lang = 'en-NG'; // English (Nigeria) for better recognition with Nigerian accent
         this.recognition.maxAlternatives = 1;
 
         this.recognition.onstart = () => {
@@ -68,6 +70,7 @@ class VoiceChatService {
           this.interimTranscript = '';
           this.finalTranscript = '';
           this.clearTimeouts();
+          this.startSilenceDetector(); // Start the 15s silence detector
         };
 
         this.recognition.onend = () => {
@@ -75,14 +78,14 @@ class VoiceChatService {
           this.isRecognitionActive = false;
           this.updateSessionState({ isListening: false });
 
-          // Process final transcript if we have one and not already processing
-          if (this.finalTranscript.trim() && !this.isProcessingResponse && !this.session?.isSpeaking) {
-            this.handleUserSpeech(this.finalTranscript.trim());
-            this.finalTranscript = '';
-          } else if (this.session?.isActive && !this.session.isSpeaking && !this.isProcessingResponse) {
-            // Auto-restart if session is still active and not speaking
+          // With continuous=true, onend fires only when recognition stops
+          // unexpectedly (e.g. browser timeout). Don't process transcript here —
+          // the speechTimeout (3.5s) handles deciding when the user is done.
+          // Just auto-restart if the session is still active.
+          if (this.session?.isActive && !this.session.isSpeaking && !this.isProcessingResponse) {
             setTimeout(() => {
               if (this.session?.isActive && !this.session.isSpeaking && !this.isProcessingResponse) {
+                console.log('🔄 Auto-restarting recognition after unexpected end');
                 this.startListening();
               }
             }, 500);
@@ -115,6 +118,10 @@ class VoiceChatService {
             return;
           }
 
+          // CRITICAL: Clear any existing timeouts immediately whenever user is speaking!
+          // This prevents previous timers from firing and interrupting active speech.
+          this.clearTimeouts();
+
           this.interimTranscript = '';
           let newFinalTranscript = '';
 
@@ -135,8 +142,7 @@ class VoiceChatService {
             this.finalTranscript = newFinalTranscript.trim();
             console.log('📝 Final transcript:', this.finalTranscript);
 
-            // Clear any existing timeout and set a new one
-            this.clearTimeouts();
+            // Set speech timeout (3.5s) to process the completed sentence
             this.speechTimeout = setTimeout(() => {
               if (this.finalTranscript.trim() && !this.isProcessingResponse && !this.session?.isSpeaking) {
                 console.log('⏱️ Speech timeout - processing transcript');
@@ -144,7 +150,10 @@ class VoiceChatService {
                 this.handleUserSpeech(this.finalTranscript.trim());
                 this.finalTranscript = '';
               }
-            }, 1500); // Reduced to 1.5 seconds
+            }, 3500); // 3.5 seconds — give the user plenty of time to finish speaking
+          } else {
+            // If they are still generating interim results, keep resetting the silence detector!
+            this.startSilenceDetector();
           }
 
           // Log interim results for debugging
@@ -171,8 +180,71 @@ class VoiceChatService {
     }
   }
 
+  // Start the 15-second idle silence detector check-in prompt
+  private startSilenceDetector() {
+    if (this.silenceTimeout) {
+      clearTimeout(this.silenceTimeout);
+    }
+
+    this.silenceTimeout = setTimeout(() => {
+      if (
+        this.session?.isActive &&
+        !this.session.isSpeaking &&
+        !this.isProcessingResponse &&
+        !this.finalTranscript.trim() &&
+        !this.interimTranscript.trim()
+      ) {
+        console.log('⏰ Silence detected (15s) - prompting student');
+
+        // Address the student politely by name if possible
+        const name = authService.getCurrentUser()?.full_name || '';
+        const firstName = name ? name.split(' ')[0] : 'my friend';
+        const prompts = [
+          `Are you still there, ${firstName}? Let me know if you would like me to explain the next part, or if you need more time.`,
+          `Hey ${firstName}, just checking in. Are we together? Would you like us to continue?`,
+          `Are you still with me, ${firstName}? I am ready whenever you are. Should we proceed?`
+        ];
+        const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+
+        this.speakAIResponse(randomPrompt);
+      }
+    }, 15000); // 15 seconds
+  }
+
   // Start a new voice chat session
   startVoiceChat(agenticMode: boolean = true): VoiceChatSession {
+    // Try to restore session from localStorage if it exists and was active recently (e.g., within 10 minutes)
+    if (typeof window !== 'undefined') {
+      const savedSessionStr = localStorage.getItem('alia-voice-session');
+      if (savedSessionStr) {
+        try {
+          const savedSession = JSON.parse(savedSessionStr);
+          const savedTime = savedSession.timestamp ? new Date(savedSession.timestamp).getTime() : 0;
+          const now = Date.now();
+          if (savedSession.isActive && (now - savedTime) < 10 * 60 * 1000) {
+            console.log('🔄 Restoring persisted voice chat session...');
+            const restoredSession: VoiceChatSession = {
+              ...savedSession,
+              isListening: false,
+              isSpeaking: false,
+              isProcessing: false,
+              isAgenticMode: agenticMode,
+              isContinuousMode: agenticMode
+            };
+            this.session = restoredSession;
+            this.initializeSpeechRecognition();
+            // Start listening without repeating the greeting!
+            setTimeout(() => {
+              this.startListening();
+            }, 1000);
+            return restoredSession;
+          }
+        } catch (e) {
+          console.error('Failed to restore voice session:', e);
+        }
+      }
+    }
+
     this.session = {
       id: Date.now().toString(),
       isActive: true,
@@ -317,6 +389,12 @@ class VoiceChatService {
       textToSpeechService.stop();
       this.clearTimeouts();
       this.isProcessingResponse = false;
+    }
+    
+    // Clear persistence
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('alia-voice-session');
+      localStorage.removeItem('alia-live-assistant-open');
     }
     this.session = null;
   }
@@ -484,6 +562,11 @@ class VoiceChatService {
     this.clearTimeouts();
   }
 
+  // Send a query programmatically
+  sendQuery(text: string) {
+    this.handleUserSpeech(text);
+  }
+
   // Handle user speech input
   private async handleUserSpeech(transcript: string) {
     if (!this.session || !transcript.trim() || this.isProcessingResponse) return;
@@ -495,6 +578,10 @@ class VoiceChatService {
     }
 
     console.log('🗣️ Processing user speech:', transcript);
+
+    // Register a gesture so the AI's TTS response always plays immediately
+    // (voice input IS a user interaction — don't silently queue the response)
+    textToSpeechService.registerGesture();
 
     // CRITICAL: Check if this transcript matches what the AI just said (prevent echo loop)
     const transcriptLower = transcript.toLowerCase().trim();
@@ -582,120 +669,127 @@ class VoiceChatService {
       let actions: any[] = [];
 
       if (this.session.isAgenticMode) {
-        // PRIORITIZE Grok AI for intelligent agentic responses
-        if (grokAIService.isConfigured()) {
-          try {
-            console.log('🤖 Using Grok AI as PRIMARY intelligence for agentic mode...');
+        // PRIORITIZE Gemini AI if configured, otherwise Grok AI
+        const hasGemini = geminiAIService.isConfigured();
+        const hasGrok = grokAIService.isConfigured();
 
-            // Convert our UserContext to Grok's expected format
-            const grokContext = {
+        if (hasGemini || hasGrok) {
+          try {
+            const serviceName = hasGemini ? 'Gemini AI' : 'Grok AI';
+            const service = hasGemini ? geminiAIService : grokAIService;
+            console.log(`🤖 Using ${serviceName} as PRIMARY intelligence for agentic mode...`);
+
+            const aiContext = {
+              studentName: authService.getCurrentUser()?.full_name || '',
               currentCourse: systemControlService.getUserContext().currentCourse,
               completedTopics: systemControlService.getUserContext().completedTopics,
-              learningGoals: [], // Default empty array
+              enrolledCourses: systemControlService.getUserContext().enrolledCourses,
+              learningGoals: [],
               preferences: {
                 language: systemControlService.getUserContext().preferences.language,
-                learningStyle: 'visual', // Default value
-                difficulty: 'intermediate' // Default value
+                learningStyle: 'visual',
+                difficulty: 'intermediate'
               },
               performance: {
                 averageScore: systemControlService.getUserContext().performance.averageScore,
                 timeSpent: systemControlService.getUserContext().performance.totalTimeSpent,
-                strugglingTopics: [] // Default empty array
+                strugglingTopics: []
               }
             };
 
-            grokAIService.updateUserContext(grokContext);
-            const grokResponse = await grokAIService.generateAgenticResponse(transcript);
+            service.updateUserContext(aiContext);
+            const aiResult = await service.generateAgenticResponse(transcript);
 
-            // Use Grok's response as PRIMARY
-            aiResponse = grokResponse.response;
-            suggestions = grokResponse.suggestions;
-            actions = grokResponse.actions;
+            aiResponse = aiResult.response;
+            suggestions = aiResult.suggestions;
+            actions = aiResult.actions;
 
-            // RESTORED: Auto-execute actions suggested by Grok if appropriate
             if (actions && actions.length > 0) {
-              console.log(`🚀 AI suggested ${actions.length} actions. Executing primary...`);
-              // Only auto-execute the most relevant first action to avoid chaos
               const primaryAction = actions[0];
-              try {
-                const actionResult = await systemControlService.executeRawAction({
-                  type: primaryAction.type,
-                  description: primaryAction.description,
-                  data: primaryAction.data
-                });
-                aiResponse += `\n\n[Action Executed: ${actionResult}]`;
-                console.log('✅ Action executed successfully:', actionResult);
-              } catch (actionError) {
-                console.error('❌ Failed to execute AI action:', actionError);
+              if (this.session.isAgenticMode && (primaryAction.type === 'navigate' || primaryAction.type === 'start_course' || primaryAction.type === 'enroll' || primaryAction.type === 'take_quiz')) {
+                console.log(`🚫 Live Mode: Bypassing page navigation action of type: ${primaryAction.type}`);
+              } else {
+                console.log(`🚀 AI suggested ${actions.length} actions. Executing primary...`);
+                try {
+                  const actionResult = await systemControlService.executeRawAction({
+                    type: primaryAction.type,
+                    description: primaryAction.description,
+                    data: primaryAction.data
+                  });
+                  aiResponse += `\n\n[Action Executed: ${actionResult}]`;
+                  console.log('✅ Action executed successfully:', actionResult);
+                } catch (actionError) {
+                  console.error('❌ Failed to execute AI action:', actionError);
+                }
               }
             }
           } catch (error) {
-            console.error('❌ Grok AI failed, falling back to system control:', error);
+            console.error('❌ Primary AI failed, falling back to system control:', error);
 
             // Fallback to system control service
             const contextualResponse = await systemControlService.getContextualResponse(transcript);
             aiResponse = contextualResponse.response;
             suggestions = systemControlService.getSmartSuggestions();
 
-            // Auto-execute action if determined
             if (contextualResponse.autoExecute) {
               const actionResult = await systemControlService.executeAction(contextualResponse.autoExecute);
               aiResponse += ' ' + actionResult;
             }
 
-            // Add available actions
             actions = contextualResponse.actions.map(action => ({
               type: action.type,
               description: action.description
             }));
           }
         } else {
-          // No Grok AI configured, use system control service
-          console.log('⚠️ Grok AI not configured, using system control service');
+          // No AI configured, use system control service
+          console.log('⚠️ No AI service configured, using system control service');
           const contextualResponse = await systemControlService.getContextualResponse(transcript);
           aiResponse = contextualResponse.response;
           suggestions = systemControlService.getSmartSuggestions();
 
-          // Auto-execute action if determined
           if (contextualResponse.autoExecute) {
             const actionResult = await systemControlService.executeAction(contextualResponse.autoExecute);
             aiResponse += ' ' + actionResult;
           }
 
-          // Add available actions
           actions = contextualResponse.actions.map(action => ({
             type: action.type,
             description: action.description
           }));
         }
       } else {
-        // Use Grok AI if available, otherwise local response
-        if (grokAIService.isConfigured()) {
+        // Use Gemini or Grok if available, otherwise local response
+        const hasGemini = geminiAIService.isConfigured();
+        const hasGrok = grokAIService.isConfigured();
+        if (hasGemini || hasGrok) {
           try {
-            // Convert our UserContext to Grok's expected format
-            const grokContext = {
+            const service = hasGemini ? geminiAIService : grokAIService;
+            const aiContext = {
+              studentName: authService.getCurrentUser()?.full_name || '',
               currentCourse: systemControlService.getUserContext().currentCourse,
               completedTopics: systemControlService.getUserContext().completedTopics,
-              learningGoals: [], // Default empty array
+              enrolledCourses: systemControlService.getUserContext().enrolledCourses,
+              learningGoals: [],
               preferences: {
                 language: systemControlService.getUserContext().preferences.language,
-                learningStyle: 'visual', // Default value
-                difficulty: 'intermediate' // Default value
+                learningStyle: 'visual',
+                difficulty: 'intermediate'
               },
               performance: {
                 averageScore: systemControlService.getUserContext().performance.averageScore,
                 timeSpent: systemControlService.getUserContext().performance.totalTimeSpent,
-                strugglingTopics: [] // Default empty array
+                strugglingTopics: []
               }
             };
 
-            grokAIService.updateUserContext(grokContext);
-            const agenticResponse = await grokAIService.generateAgenticResponse(transcript);
+            service.updateUserContext(aiContext);
+            const agenticResponse = await service.generateAgenticResponse(transcript);
             aiResponse = agenticResponse.response;
             suggestions = agenticResponse.suggestions;
             actions = agenticResponse.actions;
           } catch (error) {
-            console.error('Grok AI error, falling back:', error);
+            console.error('AI error, falling back to local:', error);
             aiResponse = await this.generateLocalResponse(transcript);
           }
         } else {
@@ -838,6 +932,11 @@ class VoiceChatService {
 
     console.log('🔊 AI starting to speak:', text.substring(0, 50) + '...');
     
+    // CRITICAL: Register a gesture so TTS doesn't queue silently.
+    // The user interacted via voice (which counts as an interaction) so
+    // all subsequent AI speech within this conversational turn should play.
+    textToSpeechService.registerGesture();
+    
     // Store what AI is about to say for filtering
     this.lastAIResponse = text;
     this.addToBlacklist(text);
@@ -908,6 +1007,19 @@ class VoiceChatService {
   private updateSessionState(updates: Partial<VoiceChatSession>) {
     if (this.session) {
       Object.assign(this.session, updates);
+      
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const sessionToSave = {
+            ...this.session,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('alia-voice-session', JSON.stringify(sessionToSave));
+        } catch (e) {
+          console.error('Error persisting voice session state:', e);
+        }
+      }
     }
   }
 
@@ -925,19 +1037,26 @@ class VoiceChatService {
   setLanguage(language: string) {
     if (this.recognition) {
       const langMap: Record<string, string> = {
-        'English': 'en-US',
-        'Igbo': 'en-NG', // Use English Nigeria for better recognition
+        'English': 'en-NG', // English (Nigeria) - best recognition for Nigerian students
+        'Igbo': 'en-NG',
         'Hausa': 'en-NG',
         'Yoruba': 'en-NG'
       };
 
-      this.recognition.lang = langMap[language] || 'en-US';
+      this.recognition.lang = langMap[language] || 'en-NG';
     }
+    // Also update TTS language
+    textToSpeechService.setLanguage(language);
   }
 
   // Set Grok API key
   setGrokApiKey(apiKey: string) {
     grokAIService.setApiKey(apiKey);
+  }
+
+  // Set Gemini API key
+  setGeminiApiKey(apiKey: string) {
+    geminiAIService.setApiKey(apiKey);
   }
 
   // Get interim transcript for real-time display

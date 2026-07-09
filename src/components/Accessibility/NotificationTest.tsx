@@ -103,8 +103,8 @@ export const NotificationTest: React.FC = () => {
       {/* Toggle Button - Positioned higher to avoid input obstruction */}
       <button
         onClick={() => setIsVisible(!isVisible)}
-        className={`fixed bottom-[17rem] sm:bottom-40 z-[70] w-12 h-12 bg-slate-900 text-white rounded-full shadow-lg hover:bg-slate-800 transition-all hover:scale-110 flex items-center justify-center font-black ${
-          isChatPage ? 'left-4 sm:left-8' : 'right-4 sm:right-8'
+        className={`fixed bottom-[10.5rem] z-[70] w-14 h-14 bg-slate-900 text-white rounded-full shadow-lg hover:bg-slate-800 transition-all hover:scale-110 flex items-center justify-center font-black ${
+          isChatPage ? 'left-6' : 'right-6'
         }`}
         title="Test Notifications & Reset"
       >
@@ -113,8 +113,8 @@ export const NotificationTest: React.FC = () => {
 
       {/* Test Panel - Positioned higher */}
       {isVisible && (
-        <div className={`fixed bottom-[20rem] sm:bottom-56 z-[70] w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-22rem)] sm:max-h-[calc(100vh-16rem)] overflow-y-auto ${
-          isChatPage ? 'left-4 sm:left-8' : 'right-4 sm:right-8'
+        <div className={`fixed bottom-[14.5rem] z-[70] w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-22rem)] sm:max-h-[calc(100vh-16rem)] overflow-y-auto ${
+          isChatPage ? 'left-6' : 'right-6'
         }`}>
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4">
             <div className="flex items-center justify-between">

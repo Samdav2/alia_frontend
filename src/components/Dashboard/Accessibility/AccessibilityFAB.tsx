@@ -13,11 +13,11 @@ export const AccessibilityFAB: React.FC = () => {
 
   return (
     <>
-      {/* Floating Action Button - positioned higher to avoid input obstruction */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-24 sm:bottom-20 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-lg sm:text-2xl z-40 ${isChatPage ? 'left-4 sm:left-8' : 'right-4 sm:right-8'
-          }`}
+        className={`fixed bottom-24 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center text-xl sm:text-2xl z-40 ${
+          isChatPage ? 'left-6' : 'right-6'
+        }`}
         title="Accessibility Options"
       >
         ♿

@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 };
 
 import { GlobalSignExecutor } from "@/components/Accessibility/GlobalSignExecutor";
+import { GeminiLiveAssistant } from "@/components/Accessibility/GeminiLiveAssistant";
 
 export default function RootLayout({
   children,
@@ -49,6 +50,8 @@ export default function RootLayout({
             <GazeTrackerActivator />
             {/* Global accessibility FAB - ♿ button available on every page */}
             <AccessibilityFAB />
+            {/* Gemini Live Assistant floating trigger and fullscreen dialog */}
+            <GeminiLiveAssistant />
             {children}
           </SignNavigationProvider>
         </UserPreferencesProvider>

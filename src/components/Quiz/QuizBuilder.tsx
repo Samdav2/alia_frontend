@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { lecturerService, CreateQuizData } from '@/services/api/lecturerService';
 import { useVisualNotification } from '@/components/Accessibility/VisualNotification';
 import { ConfirmModal } from '@/components/Shared/ConfirmModal';
-import { QuizOption, QuizQuestion } from '@/services/api/quizService';
+import { QuizQuestion } from '@/services/api/quizService';
 
 interface QuizBuilderProps {
   topicId: string;
@@ -122,9 +122,13 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
         passing_score: passingScore,
         topic_id: topicId,
         questions: questions.map(q => ({
+          id: q.id,
           question: q.question,
           type: q.type,
-          options: q.options?.map(o => o.text),
+          options: q.options?.map(o => ({
+            id: o.id,
+            text: o.text
+          })),
           correct_answer: q.correct_answer || '',
           points: q.points
         }))
@@ -142,7 +146,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
 
   return (
     <>
-      <div className="quiz-builder bg-white rounded-2xl p-6 max-h-[85vh] overflow-y-auto">
+      <div className="quiz-builder bg-white text-slate-900 rounded-2xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-black text-slate-900">Create Quiz</h3>
           <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 text-2xl">✕</button>
@@ -156,7 +160,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., Python Basics Quiz"
             />
           </div>
@@ -165,7 +169,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
               placeholder="Brief description of the quiz"
               rows={2}
             />
@@ -177,7 +181,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                 type="number"
                 value={timeLimit}
                 onChange={(e) => setTimeLimit(Number(e.target.value))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                 min={1}
               />
             </div>
@@ -187,7 +191,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                 type="number"
                 value={passingScore}
                 onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                 min={0}
                 max={100}
               />
@@ -198,7 +202,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                 type="number"
                 value={maxAttempts}
                 onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                 min={1}
               />
             </div>
@@ -287,7 +291,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                         type="text"
                         value={option.text}
                         onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
-                        className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                         placeholder={`Option ${option.id.toUpperCase()}`}
                         disabled={question.type === 'true_false'}
                       />
@@ -320,7 +324,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                     type="text"
                     value={question.correct_answer}
                     onChange={(e) => updateQuestion(qIndex, { correct_answer: e.target.value })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter the correct answer"
                   />
                 </div>
@@ -331,7 +335,7 @@ export const QuizBuilder: React.FC<QuizBuilderProps> = ({ topicId, existingQuiz,
                 <textarea
                   value={question.explanation}
                   onChange={(e) => updateQuestion(qIndex, { explanation: e.target.value })}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                   placeholder="Explain the correct answer"
                   rows={2}
                 />

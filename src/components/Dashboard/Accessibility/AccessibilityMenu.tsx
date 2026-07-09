@@ -204,6 +204,31 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
           )}
         </div>
 
+        {/* ALIA Live Assistant Launcher */}
+        <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-indigo-200 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <label className="font-semibold text-slate-900 flex items-center gap-2">
+              <span className="text-xl animate-bounce">🎙️</span>
+              ALIA Live Voice Tutor
+            </label>
+            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full uppercase tracking-wider animate-pulse">
+              Live Mode
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
+            Communicate live with ALIA using hands-free voice control. Safe muting and real-time captions enabled.
+          </p>
+          <button
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new CustomEvent('open-alia-live'));
+            }}
+            className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-bold hover:shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-purple-300 active:scale-95 flex items-center justify-center gap-2 text-xs"
+          >
+            🎙️ Launch ALIA Live
+          </button>
+        </div>
+
         {/* Gaze Scroll */}
         <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-200">
           <div className="flex items-center justify-between mb-2">

@@ -37,9 +37,13 @@ export interface CreateTopicData {
 }
 
 export interface QuizQuestion {
+  id: string;
   question: string;
   type: 'multiple_choice' | 'true_false' | 'short_answer';
-  options?: string[];
+  options?: Array<{
+    id: string;
+    text: string;
+  }>;
   correct_answer: string;
   points: number;
 }

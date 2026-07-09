@@ -141,7 +141,7 @@ export const InteractiveVoiceChat: React.FC = () => {
     );
   }
   return (
-    <div className="min-h-screen soft-gradient-bg">
+    <div className="min-h-screen soft-gradient-bg pb-24 lg:pb-12">
       <div className="max-w-5xl mx-auto h-screen flex flex-col">
         {/* Header */}
         <div className="glass-card rounded-b-[24px] sm:rounded-b-[32px] p-4 sm:p-6 lg:p-8 border-b border-white/60 sticky top-0 z-10">
